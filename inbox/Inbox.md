@@ -166,4 +166,4 @@ Finally, for the educational framing, “AI literacy and its implications for pr
 
 
 
-
+    16) https://journals.sagepub.com/doi/10.1177/09567976231207095 Showing that humans can't properly distinguish between AI generated faces and photos.

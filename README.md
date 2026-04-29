@@ -27,11 +27,14 @@ resources/ for the raw .pdf files, .md versions of online articles
 projects/ for project ideas
 inbox/ where I put things to be added to the collection
 
+## Inbox
+The inbox free form, more like a GTD inbox. Possible that stuff shows up multiple times. Keep it clean by moving things that were processed to inbox/processed
+
 ## Interests
 I am specifically interested in
 * AI agent systems and harnesses (LLM+toolcalls, etc.)
 * Impact of AI on the future of engineering professions, SW and HW
 * Estimates on impact of AI on workload, etc.
 * AI failures - real world cases where AI systems mess up
-
+* AI and chip design / RTL design. Obviously, this is what we do at our startup.
 
