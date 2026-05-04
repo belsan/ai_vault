@@ -1,0 +1,65 @@
+# =============================================================
+# .gitignore for the AI vault
+# =============================================================
+
+# --- macOS / OS junk -------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+desktop.ini
+
+# --- Editor backups --------------------------------------------
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# --- LaTeX intermediates and build output ----------------------
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.log
+*.lot
+*.nav
+*.out
+*.run.xml
+*.snm
+*.synctex.gz
+*.toc
+*.vrb
+
+# Whole-build directory used by manuscript/build.sh
+manuscript/build/
+
+# --- Generated previews of figures ----------------------------
+# The .dot source and the rendered .pdf are committed; PNG previews
+# are throwaway artefacts from the diagram tooling.
+manuscript/figures/*_preview.png
+manuscript/figures/*_preview.jpg
+
+# --- Python ---------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.env
+*.egg-info/
+.pytest_cache/
+
+# --- Node / JS (in case any scripts grow that way) ------------
+node_modules/
+
+# --- Misc -----------------------------------------------------
+*.tmp

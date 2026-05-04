@@ -18,6 +18,18 @@ Underlying-model territory: small models, training tricks, self-distillation, re
 - **Local:** `2026_self-distillation-code-generation.pdf`
 - **Summary:** Sample solutions from the model itself with the right temperature/truncation, then SFT on those samples. Improves Qwen3-30B-Instruct from 42.4% → 55.3% pass@1 on LiveCodeBench v6, with the gains concentrated on harder problems. Generalizes across Qwen and Llama at 4B/8B/30B.
 
+### Why LLMs Struggle to Count Letters — Fu et al., 2024
+- **Title:** Why Do Large Language Models (LLMs) Struggle to Count Letters?
+- **arXiv:** [2412.18626](https://arxiv.org/abs/2412.18626)
+- **Local:** `2024_struggle-counting-letters.pdf`
+- **Summary:** Empirical study of letter-counting failures (the "strawberry" problem). Shows accuracy degrades with training-corpus frequency and counting complexity, and that chain-of-thought prompting does not fix it. Mechanical explanation: tokenization hides characters from the model. Cited from Chapter 2 (Tool Calls).
+
+### The Genius Paradox — Xu & Ma, 2024
+- **Title:** LLM The Genius Paradox: A Linguistic and Math Expert's Struggle with Simple Word-based Counting Problems
+- **arXiv:** [2410.14166](https://arxiv.org/abs/2410.14166)
+- **Local:** `2024_genius-paradox-counting-letters.pdf`
+- **Summary:** Companion analysis of the strawberry phenomenon: a model that solves graduate-level math word problems can fail a primary-school spelling task. Tokenization is again the structural cause. Cited from Chapter 2 (Tool Calls).
+
 ---
 
 ## Position pieces & model families (link-only)

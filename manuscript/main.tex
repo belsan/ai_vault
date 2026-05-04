@@ -1,0 +1,48 @@
+% =============================================================
+% main.tex --- top-level book file
+%
+% Build:
+%   pdflatex main
+%   bibtex   main
+%   pdflatex main
+%   pdflatex main
+%
+% or simply: ./build.sh
+% =============================================================
+
+\documentclass[11pt,oneside]{book}
+
+\input{preamble.tex}
+
+% --- Front matter -----------------------------------------------
+\title{
+  \vspace*{2cm}
+  {\Huge\sffamily\bfseries\color{accent} A Course on AI Agents}\\[0.6em]
+  {\Large\sffamily Lecture notes for engineers building agentic systems}\\[0.8em]
+  {\normalsize\sffamily\itshape Version 0.2 --- April 2026}
+}
+\author{
+  Sandro Belfanti, PhD\\
+  \normalsize Chipmind AG\\[0.4em]
+  \normalsize\itshape with assistance from Claude Opus 4.7
+}
+\date{\today}
+
+\begin{document}
+
+\frontmatter
+\maketitle
+\tableofcontents
+
+% --- Main matter ------------------------------------------------
+\mainmatter
+
+\input{chapters/01_prompting.tex}
+\input{chapters/02_llm_fundamentals.tex}
+\input{chapters/03_toolcalls.tex}
+
+% --- Bibliography -----------------------------------------------
+\backmatter
+\bibliography{references}
+
+\end{document}

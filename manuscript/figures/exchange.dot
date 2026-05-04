@@ -1,0 +1,114 @@
+// =============================================================
+// exchange.dot --- Sequence of a tool-call exchange
+// Render with:  dot -Tpdf exchange.dot -o exchange.pdf
+// =============================================================
+//
+// Three lifelines:  Tool | Runtime | LLM
+//
+// Each numbered row is one step of the exchange. Arrows on a row
+// represent the message exchanged at that step. There is no direct
+// arrow between Tool and LLM at any step --- the model never talks
+// to a tool without going through the runtime.
+
+digraph exchange {
+    rankdir   = TB;
+    nodesep   = 0.45;
+    ranksep   = 0.30;
+    splines   = false;
+    pad       = 0.20;
+    bgcolor   = "transparent";
+    newrank   = true;
+
+    // Default styles -------------------------------------------------
+    node [
+        fontname  = "Helvetica",
+        fontsize  = 12,
+        shape     = box,
+        style     = "rounded,filled",
+        color     = "#1F4E79",
+        fillcolor = "#1F4E79",
+        fontcolor = "white",
+        height    = 0.55,
+        width     = 1.6,
+        margin    = "0.18,0.06"
+    ];
+
+    edge [
+        fontname  = "Helvetica",
+        fontsize  = 11,
+        color     = "#1F4E79",
+        fontcolor = "#1F4E79",
+        penwidth  = 1.0,
+        arrowsize = 0.85
+    ];
+
+    // Header row: the three actors ----------------------------------
+    { rank = same;
+        tool    [label="Tool"];
+        runtime [label="Host / Runtime"];
+        llm     [label="LLM"];
+        // Invisible high-weight edges that fix the horizontal order
+        // tool | runtime | llm (left to right) within the rank.
+        edge [style=invis, weight=1000, minlen=1];
+        tool -> runtime;
+        runtime -> llm;
+    }
+
+    // Helper macros for the per-step anchor points.
+    // Anchors are tiny invisible points used as edge endpoints so
+    // that each numbered step gets its own horizontal row.
+    node [shape=point, width=0.01, style=invis, label=""];
+
+    // ---- Step 1: query + tools sent runtime -> LLM ---------------
+    { rank=same; t1, r1, l1; }
+
+    // ---- Step 2: LLM internal decision (self-edge on LLM) --------
+    { rank=same; t2, r2, l2; }
+
+    // ---- Step 3: tool_call returned to runtime -------------------
+    { rank=same; t3, r3, l3; }
+
+    // ---- Step 4: dispatch to tool, value back --------------------
+    { rank=same; t4, r4, l4; }
+    { rank=same; t5, r5, l5; }   // 4b row
+
+    // ---- Step 5: tool_result handed to LLM -----------------------
+    { rank=same; t6, r6, l6; }
+
+    // ---- Step 6: final natural-language answer -------------------
+    { rank=same; t7, r7, l7; }
+
+    // Lifelines: invisible vertical chains keep each column aligned.
+    edge [style=invis, weight=100, arrowhead=none];
+    tool    -> t1 -> t2 -> t3 -> t4 -> t5 -> t6 -> t7;
+    runtime -> r1 -> r2 -> r3 -> r4 -> r5 -> r6 -> r7;
+    llm     -> l1 -> l2 -> l3 -> l4 -> l5 -> l6 -> l7;
+
+    // Visible message edges -----------------------------------------
+    edge [style=solid, weight=1, arrowhead=normal,
+          constraint=false, fontcolor="#222222"];
+
+    // Step 1: runtime -> LLM (forward, solid)
+    r1 -> l1 [label="1.  query + tools=[...]"];
+
+    // Step 2: LLM self-decision (dashed loop)
+    l2 -> l2 [label="2.  decide: text or tool call?",
+              style=dashed, dir=back];
+
+    // Step 3: LLM -> runtime (response, dashed)
+    l3 -> r3 [label="3.  tool_call(count_letter, args)",
+              style=dashed];
+
+    // Step 4a: runtime -> tool (forward, solid)
+    r4 -> t4 [label="4.  parse, validate, dispatch"];
+
+    // Step 4b: tool -> runtime (return value, dashed)
+    t5 -> r5 [label="4.  return value (= 3)", style=dashed];
+
+    // Step 5: runtime -> LLM (forward, solid)
+    r6 -> l6 [label="5.  tool_result = 3"];
+
+    // Step 6: LLM -> runtime (final answer, dashed)
+    l7 -> r7 [label="6.  final answer (natural language)",
+              style=dashed];
+}

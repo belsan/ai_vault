@@ -13,6 +13,10 @@ Conventions:
 
 | Year | First author | Title | Link | Local |
 |---|---|---|---|---|
+| 2022 | Liang | Code as Policies — LM programs for embodied control | [arXiv:2209.07753](https://arxiv.org/abs/2209.07753) | [L] `2022_liang_code-as-policies.pdf` |
+| 2023 | Schick | Toolformer — Language Models Can Teach Themselves to Use Tools | [arXiv:2302.04761](https://arxiv.org/abs/2302.04761) | [L] `2023_schick_toolformer.pdf` |
+| 2023 | Yao | ReAct — Synergizing Reasoning and Acting | [arXiv:2210.03629](https://arxiv.org/abs/2210.03629) | [L] `2023_yao_react.pdf` |
+| 2023 | Patil | Gorilla — LLM connected with massive APIs | [arXiv:2305.15334](https://arxiv.org/abs/2305.15334) | [L] `2023_patil_gorilla-large-language-model-connected-with-massive-apis.pdf` |
 | 2024 | Wang | Executable Code Actions Elicit Better LLM Agents (CodeAct) | [arXiv:2402.01030](https://arxiv.org/abs/2402.01030) | [L] `wang2024_codeact_executable-code-actions.pdf` |
 | 2025 | Zhang | Agentic Context Engineering (ACE) | [arXiv:2510.04618](https://arxiv.org/abs/2510.04618) | [L] `zhang2025_agentic-context-engineering.pdf` |
 | 2025 | Kim | Towards a Science of Scaling Agent Systems | [arXiv:2512.08296](https://arxiv.org/abs/2512.08296) | [L] `2025_deepmind_multi-agent-systems.pdf` |
@@ -62,6 +66,8 @@ Conventions:
 
 | Year | First author | Title | Link | Local |
 |---|---|---|---|---|
+| 2024 | Xu | The Genius Paradox — counting letters | [arXiv:2410.14166](https://arxiv.org/abs/2410.14166) | [L] `2024_genius-paradox-counting-letters.pdf` |
+| 2024 | Fu | Why Do LLMs Struggle to Count Letters? | [arXiv:2412.18626](https://arxiv.org/abs/2412.18626) | [L] `2024_struggle-counting-letters.pdf` |
 | 2025 | Jolicoeur-Martineau | Less is More: Recursive Reasoning with Tiny Networks | [arXiv:2510.04871](https://arxiv.org/abs/2510.04871) | [L] `2025_recursive-reasoning-tiny-networks.pdf` |
 | 2026 | Zhang | Embarrassingly Simple Self-Distillation Improves Code Generation | [arXiv:2604.01193](https://arxiv.org/abs/2604.01193) | [L] `2026_self-distillation-code-generation.pdf` |
 | — | NVIDIA | "Small Language Models are the future of agentic AI" (position paper) | (search NVIDIA research site) | [W] |

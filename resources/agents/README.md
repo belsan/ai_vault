@@ -12,6 +12,30 @@ Papers, articles, and code on the design of LLM-based agents: action spaces, har
 - **Local:** `wang2024_codeact_executable-code-actions.pdf`
 - **Summary:** Argues that letting an LLM agent emit *executable Python* as its action — instead of JSON tool calls — gives a unified, composable action space. Foundational paper for the "code-as-action" school of agent design and an obvious reference when explaining why we lean on executable code in our own harnesses.
 
+### Toolformer — Schick et al., 2023
+- **Title:** Toolformer: Language Models Can Teach Themselves to Use Tools
+- **arXiv:** [2302.04761](https://arxiv.org/abs/2302.04761)
+- **Local:** `2023_schick_toolformer.pdf`
+- **Summary:** Self-supervised approach to teach an LLM to insert API calls into its own outputs by sampling candidate calls, executing them, and keeping only those whose result reduces downstream perplexity. Canonical reference for the "train the model to use tools" path.
+
+### ReAct — Yao et al., 2023
+- **Title:** ReAct: Synergizing Reasoning and Acting in Language Models
+- **arXiv:** [2210.03629](https://arxiv.org/abs/2210.03629)
+- **Local:** `2023_yao_react.pdf`
+- **Summary:** Interleaves "thought" (free-form reasoning) and "action" (tool use) in the same generation loop. Almost every modern agent harness inherits the pattern. Cite alongside CodeAct when introducing the agent control loop.
+
+### Gorilla — Patil et al., 2023
+- **Title:** Gorilla: Large Language Model Connected with Massive APIs
+- **arXiv:** [2305.15334](https://arxiv.org/abs/2305.15334)
+- **Local:** `2023_patil_gorilla-large-language-model-connected-with-massive-apis.pdf`
+- **Summary:** Fine-tunes an LLM to call APIs from a corpus of thousands (HuggingFace, TensorFlow Hub, etc.). Introduces an evaluation methodology that became the basis for the Berkeley Function Calling Leaderboard. Useful reference when discussing tool calls at API-zoo scale.
+
+### Code as Policies — Liang et al., 2023
+- **Title:** Code as Policies: Language Model Programs for Embodied Control
+- **arXiv:** [2209.07753](https://arxiv.org/abs/2209.07753)
+- **Local:** `2022_liang_code-as-policies.pdf`
+- **Summary:** Embodied/robotics counterpart to CodeAct: LLM emits Python that calls perception/control primitives, controlling a robot end-to-end. The clearest non-software example that "the action space should be a programming language."
+
 ### ACE — Zhang et al., 2025
 - **Title:** Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models
 - **arXiv:** [2510.04618](https://arxiv.org/abs/2510.04618)

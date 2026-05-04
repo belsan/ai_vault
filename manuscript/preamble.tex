@@ -1,0 +1,212 @@
+% =============================================================
+% preamble.tex --- shared packages, theorem environments, listings
+% =============================================================
+
+% --- Page setup --------------------------------------------------
+\usepackage[a4paper,margin=2.6cm]{geometry}
+\usepackage{microtype}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{parskip}
+
+% --- Math --------------------------------------------------------
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+
+% --- Tables, lists, headings, captions ---------------------------
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf,labelsep=period}
+
+% --- Color & graphics --------------------------------------------
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc,shapes.misc,fit,backgrounds,decorations.pathreplacing}
+\definecolor{codebg}{HTML}{F6F6F4}
+\definecolor{codekw}{HTML}{1F4E79}
+\definecolor{codestr}{HTML}{8B6914}
+\definecolor{codecom}{HTML}{4B7F4B}
+\definecolor{codeident}{HTML}{222222}
+\definecolor{accent}{HTML}{1F4E79}
+\definecolor{boxbg}{HTML}{F1F4F9}
+\definecolor{boxrule}{HTML}{1F4E79}
+
+% --- Code listings -----------------------------------------------
+\usepackage{listings}
+\lstset{
+  backgroundcolor=\color{codebg},
+  basicstyle=\ttfamily\footnotesize,
+  keywordstyle=\color{codekw}\bfseries,
+  stringstyle=\color{codestr},
+  commentstyle=\color{codecom}\itshape,
+  identifierstyle=\color{codeident},
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=true,
+  columns=fullflexible,
+  keepspaces=true,
+  frame=single,
+  framerule=0.4pt,
+  rulecolor=\color{black!20},
+  numbers=left,
+  numbersep=8pt,
+  numberstyle=\tiny\color{black!50},
+  xleftmargin=1.2em,
+  xrightmargin=0.5em,
+  aboveskip=1em,
+  belowskip=1em,
+  captionpos=b,
+}
+
+\lstdefinelanguage{json}{
+  basicstyle=\ttfamily\footnotesize,
+  string=[s]{"}{"},
+  stringstyle=\color{codestr},
+  morestring=[b]",
+  morecomment=[l]{//},
+  literate=
+    *{0}{{{\color{codekw}0}}}{1}
+     {1}{{{\color{codekw}1}}}{1}
+     {2}{{{\color{codekw}2}}}{1}
+     {3}{{{\color{codekw}3}}}{1}
+     {4}{{{\color{codekw}4}}}{1}
+     {5}{{{\color{codekw}5}}}{1}
+     {6}{{{\color{codekw}6}}}{1}
+     {7}{{{\color{codekw}7}}}{1}
+     {8}{{{\color{codekw}8}}}{1}
+     {9}{{{\color{codekw}9}}}{1},
+}
+
+% --- Theorem-like environments via tcolorbox ---------------------
+\usepackage[most]{tcolorbox}
+
+\newtcolorbox{definitionbox}[1][]{
+  enhanced, breakable,
+  colback=boxbg, colframe=boxrule,
+  fonttitle=\bfseries\sffamily,
+  title=Definition,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=boxrule, colframe=boxrule,
+    sharp corners
+  },
+  before skip=12pt, after skip=12pt,
+  arc=2pt,
+  left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+\newtcolorbox{examplebox}[1][]{
+  enhanced, breakable,
+  colback=white, colframe=boxrule,
+  fonttitle=\bfseries\sffamily,
+  title=Example,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=boxrule, colframe=boxrule,
+    sharp corners
+  },
+  before skip=12pt, after skip=12pt,
+  arc=2pt,
+  left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+\newtcolorbox{remarkbox}[1][]{
+  enhanced, breakable,
+  colback=white, colframe=black!50,
+  fonttitle=\bfseries\sffamily,
+  title=Remark,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=black!50, colframe=black!50,
+    sharp corners
+  },
+  before skip=12pt, after skip=12pt,
+  arc=2pt,
+  left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+\newtcolorbox{updatebox}[1][]{
+  enhanced, breakable,
+  colback=accent!4, colframe=accent!70,
+  fonttitle=\bfseries\sffamily,
+  title=Update,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=accent!70, colframe=accent!70,
+    sharp corners
+  },
+  before skip=12pt, after skip=12pt,
+  arc=2pt,
+  left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+\newtcolorbox{warningbox}[1][]{
+  enhanced, breakable,
+  colback=red!3, colframe=red!50!black,
+  fonttitle=\bfseries\sffamily,
+  title=Caution,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=red!50!black, colframe=red!50!black,
+    sharp corners
+  },
+  before skip=12pt, after skip=12pt,
+  arc=2pt,
+  left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+% --- Bibliography (natbib + bibtex) ------------------------------
+\usepackage[round, authoryear]{natbib}
+\bibliographystyle{plainnat}
+
+% --- Hyperref last -----------------------------------------------
+\usepackage[
+  colorlinks=true,
+  linkcolor=accent,
+  citecolor=accent,
+  urlcolor=accent,
+  pdfborder={0 0 0}
+]{hyperref}
+
+% --- Headers / footers -------------------------------------------
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\chaptermark}[1]{\markboth{\thechapter.\ #1}{}}
+\renewcommand{\sectionmark}[1]{\markright{\thesection.\ #1}}
+\fancyhead[L]{\small\nouppercase\leftmark}
+\fancyhead[R]{\small\nouppercase\rightmark}
+\fancyfoot[R]{\small\thepage}
+
+% --- Convenience macros ------------------------------------------
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\fname}[1]{\texttt{#1}}
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
+
+% --- Title face (subtle textbook look) ---------------------------
+\titleformat{\chapter}[display]
+  {\normalfont\sffamily\bfseries\color{accent}}
+  {\filright\Large\textsc{Chapter}\ \thechapter}
+  {0.6em}
+  {\filright\Huge}
+\titlespacing*{\chapter}{0pt}{-30pt}{18pt}
+
+\titleformat{\section}
+  {\normalfont\sffamily\Large\bfseries\color{accent}}
+  {\thesection}{0.6em}{}
+\titleformat{\subsection}
+  {\normalfont\sffamily\large\bfseries}
+  {\thesubsection}{0.5em}{}
+\titleformat{\subsubsection}
+  {\normalfont\sffamily\normalsize\bfseries}
+  {\thesubsubsection}{0.5em}{}

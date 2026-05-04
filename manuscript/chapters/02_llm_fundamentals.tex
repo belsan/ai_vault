@@ -1,0 +1,55 @@
+% =============================================================
+% Chapter 2 --- LLM Fundamentals
+% =============================================================
+
+\chapter{LLM Fundamentals}
+\label{ch:fundamentals}
+
+\todo{This chapter is a stub. It will introduce the building blocks
+that the rest of the book takes for granted: the autoregressive
+generation loop, tokens versus characters, the chat-message
+abstraction (system / user / assistant turns), temperature and
+sampling, and \emph{structured outputs}. The structured-outputs
+section is the prerequisite for understanding tool calls
+(Chapter~\ref{ch:toolcalls}), and is sketched briefly below so the
+forward references compile.}
+
+\section{Structured Outputs}
+\label{sec:structured}
+
+By default a language model emits a stream of tokens that decode to
+free-form natural language. Many downstream uses need more: a JSON
+object with a fixed shape, an XML document, a SQL query, a function
+signature. Three families of techniques are in common use, in
+increasing order of guarantees:
+
+\begin{enumerate}[label=(\arabic*)]
+\item \textbf{Prompting.} The system prompt instructs the model to
+  emit, say, ``a single JSON object on one line, no prose, no code
+  fences''. This works most of the time on a sufficiently large
+  model and almost always with one or two few-shot examples. It is
+  the cheapest option and the one most readers will start with.
+\item \textbf{Constrained decoding.} The runtime intercepts the
+  token stream and masks out any token that would violate a target
+  grammar. Implementations include \code{llama.cpp}'s GBNF grammars,
+  \code{Outlines}, \code{lm-format-enforcer}, and the structured-output
+  modes shipped by hosted providers. The output is \emph{guaranteed}
+  to parse against the schema.
+\item \textbf{Fine-tuning.} The model is trained on examples of the
+  desired structured format. Used in concert with constrained
+  decoding it produces the most reliable output, at the cost of a
+  training run.
+\end{enumerate}
+
+\noindent
+A tool call is the canonical application of structured outputs: a
+JSON object with a known schema, intercepted by the runtime,
+dispatched, and answered. Chapter~\ref{ch:toolcalls} treats the tool
+call as the unit of work and assumes structured-output reliability
+is a solved problem at the layer below.
+
+\todo{Expand: a worked example of constrained decoding against a
+local model; a comparison of the schema languages used by major
+providers (OpenAI's tool schema, Anthropic's, Gemma 4's auto-derived
+schema from Python type hints); the trade-off between
+prompt-engineering reliability and constrained-decoding rigidity.}
