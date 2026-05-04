@@ -737,6 +737,148 @@ two from each family; the numbers we have seen in practice rarely
 exceed twenty before the model's ability to choose the right tool
 becomes the bottleneck rather than the inventory.
 
+\section{Tool Calls and Context}
+\label{sec:context}
+
+The previous section ended on a practical observation: production
+systems rarely advertise more than twenty tools at once. The reason
+is not that the model lacks the cleverness to discriminate among
+more --- the reason is that every tool advertised costs context, and
+context is the most precious resource in any agent's budget. 
+
+The short version is: all the tools have to be\footnote{there are, of course, 
+no absolute rules. We will discuss how to get around this with programmatic
+tool-calling in Section XXX and more advanced techniques such as sub-agents in Chapter XXX}
+in every prompt, otherwise the model cannot call them. And that means a full
+description of tool and parameters. A high price to pay.
+
+Section
+\S\ref{sec:context} unpacks this trade-off, because it explains the
+shape of every system we build later in the book.
+
+\subsection{Where do tool descriptions live?}
+\label{sec:context-prompt}
+
+The tool catalogue is part of the model's input on every turn. When
+a host like Ollama or the OpenAI SDK accepts a \code{tools=[\dots]}
+parameter, what actually happens under the hood is that those tool
+descriptions are formatted into the model's prompt: as a dedicated
+\code{<\,|tool>~\dots~<tool|>} block in Gemma~4's native template,
+as a JSON-schema list inside the system message in OpenAI's case,
+as a Claude-specific XML block for Anthropic. The exact tokens
+differ; the cost structure does not. A tool description --- name,
+one-paragraph purpose, JSON-schema for arguments --- typically
+serialises to between 100 and 300 tokens once the schema is
+fully expanded. Twenty tools is therefore on the order of two to
+six thousand tokens, before the user has typed a single character.
+
+This cost is paid \emph{every turn}. The model is stateless across
+HTTP calls, so the host has to re-send the system prompt, the tool
+catalogue, and the conversation history each time. A long-running
+agent on a 32K-context model can spend a quarter of its window
+carrying around the catalogue and the cumulative
+tool-call/tool-result transcript before the actual user
+conversation begins. On smaller open-weights models with 8K or 16K
+contexts, the pressure is much sharper.
+
+\subsection{Where do tool calls and results live?}
+\label{sec:context-transcript}
+
+A tool-call exchange grows the transcript at three different points.
+We distinguish them because they are accounted for differently in
+context-usage analysis.
+
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{The tool advertisement} (\S\ref{sec:context-prompt})
+  --- formatted into the system or first user turn, paid once per
+  request but on every request.
+\item \textbf{The assistant's tool-call message} --- when the model
+  decides to invoke a tool, the host appends a structured
+  \code{tool\_calls} message containing the chosen name and the JSON
+  arguments. On native APIs the field is structured; in plain text
+  the equivalent is a JSON object embedded in the assistant's turn.
+\item \textbf{The tool-result message} --- a separate message, role
+  \code{tool}, carrying the return value back. The runtime appends
+  this to the conversation history before re-prompting the model.
+\end{enumerate}
+
+\noindent
+The third item is where the cost can balloon. A tool that returns a
+short integer (the strawberry counter) costs five tokens. A tool
+that returns the contents of a web page costs thousands. A tool that
+returns a list of search results, each with a long snippet, can use
+half a context window in a single call. Long-running agents that
+search, fetch, and parse repeatedly will, without any care, push the
+oldest user message off the front of the context within a dozen
+iterations.
+
+\subsection{The JSON-serialisation tax}
+\label{sec:context-json}
+
+JSON is the lingua franca of tool calls, but it is not a particularly
+efficient encoding for an LLM's context window. Every key is a
+quoted string, every brace counts, and the most common shapes
+involve nested objects whose keys are repeated for every element of
+an array. Compare two ways of returning the result of a hypothetical
+\code{search(\dots)} tool that produced three hits:
+
+\begin{lstlisting}[language=json,caption={JSON output: 116 tokens for three hits.}]
+[
+  {"title": "Foo", "url": "https://example.com/foo", "snippet": "..."},
+  {"title": "Bar", "url": "https://example.com/bar", "snippet": "..."},
+  {"title": "Baz", "url": "https://example.com/baz", "snippet": "..."}
+]
+\end{lstlisting}
+
+\begin{lstlisting}[caption={The same information as plain text: roughly half the tokens.}]
+1. Foo -- https://example.com/foo
+   ...
+2. Bar -- https://example.com/bar
+   ...
+3. Baz -- https://example.com/baz
+   ...
+\end{lstlisting}
+
+\noindent
+The JSON form is convenient for the host (it deserialises directly
+into a Python list of dicts) but not for the model: the keys
+\emph{title}, \emph{url}, and \emph{snippet} repeat once per hit, and
+each one is split into multiple tokens by the BPE tokenizer. For a
+search tool returning ten or fifty hits, the difference is a third
+of the model's context window. The mitigation is straightforward
+when one is paying attention: the tool's \emph{return} value is, in
+practice, a string that the host constructs --- nothing forces it to
+be JSON. A search tool that returns a markdown list rather than a
+JSON array typically halves the context cost without any loss of
+information the model cares about.
+
+\subsection{Practical mitigations}
+\label{sec:context-mitigations}
+
+Three patterns are common in production:
+
+\begin{enumerate}[label=(\arabic*)]
+\item \textbf{Subset the tool inventory per task.} A coding agent
+  doing a refactor does not need a calendar tool; an email assistant
+  does not need a Python interpreter. A small dispatcher that
+  inspects the task and selects a relevant subset before invoking
+  the model dramatically reduces the steady-state catalogue size.
+\item \textbf{Tool retrieval.} Treat the tool catalogue as a
+  searchable index. The model is given a small \emph{meta-tool}
+  (often called \code{find\_tools}) that takes a description of what
+  the model is trying to do and returns the schemas of the most
+  relevant tools, which the host then promotes into the active
+  catalogue. \citet{patil2023gorilla} formalise this for the case of
+  thousands of APIs, where any other approach is impossible.
+\item \textbf{Lift the abstraction to code execution.} If the model
+  emits a Python program that imports tools as functions, the cost
+  of advertising a tool collapses to ``the import line is in scope''
+  rather than ``the schema is in the system prompt''. This is the
+  argument for programmatic tool calling, which we develop in
+  \S\ref{sec:codeact}, and the architectural motivation behind the
+  Model Context Protocol, which we treat in \S\ref{sec:mcp}.
+\end{enumerate}
+
 \section{The Shell as a Tool}
 \label{sec:shell}
 
@@ -906,48 +1048,101 @@ add later: an agent that has a shell does not need a separate
 ``install dependency'' tool, because the shell already provides all
 three.
 
-\section{Code as the Universal Action}
+\section{Programmatic Tool Calls}
 \label{sec:codeact}
 
 The shell tool of \S\ref{sec:shell} is one specialisation of a more
-general design principle: the model's action space should be a
-\emph{programming language}. \citet{wang2024codeact} make the
-argument explicitly. They propose \emph{CodeAct}, in which the agent
-emits Python instead of JSON tool calls; the runtime executes the
-Python in a stateful interpreter; and the result --- standard
-output, exceptions, returned values --- is fed back. They report
-substantial gains on agent benchmarks against the JSON-tool-call
-baseline, and trace the gains to two structural properties:
-
-\begin{itemize}[leftmargin=1.5em]
-\item \textbf{Composition.} A single Python turn can compose several
-  ``tools'' into one expression --- iterate over a list, transform
-  each element, sort, slice. With JSON tool calls this requires one
-  call per primitive, with the resulting state stored in conversation
-  history.
-\item \textbf{Library access.} Anything available to the
-  interpreter --- \code{numpy}, \code{requests}, an in-process
-  vector store, the user's own Python helpers --- is available to
-  the model without per-tool schema work.
-\end{itemize}
-
+general design principle: \emph{the model's action space should be a
+programming language}. \citet{wang2024codeact} make the argument
+explicitly under the name \emph{CodeAct}, in which the agent emits
+Python instead of JSON tool calls; the runtime executes the Python
+in a stateful interpreter; and the result --- standard output,
+exceptions, returned values --- is fed back to the model.
 \citet{liang2023codeaspolicies} arrive at the same conclusion in
 embodied robotics: programs, not commands, are the natural action
-representation when the action space is rich. Anthropic's
-\emph{Code execution with MCP} guidance generalises the design to
-the Model Context Protocol~\citep{mcp2024spec,anthropic2025mcpcode}:
-instead of advertising hundreds of fine-grained tools, an MCP server
-exposes a code-execution endpoint, and individual operations become
-imports inside the executed code. The transcript shrinks
-dramatically and the model gets to plan multi-step operations as a
-single program.
-
-We refer to designs of this family --- where the agent's primary
-output is a program rather than a sequence of structured calls --- as
+representation when the action space is rich. We refer to designs
+of this family --- where the agent's primary output is a program
+rather than a sequence of structured calls --- as
 \emph{programmatic tool calling}. They subsume the JSON-tool-call
-design (a single function call is a program of length one) and
-inherit the safety profile of the shell tool: anything dangerous in
-\S\ref{sec:sandbox} applies, in stronger form, here.
+design (a single function call is a program of length one).
+
+\subsection{Why programmatic calls scale better}
+\label{sec:codeact-why}
+
+The argument has three legs and \citet{anthropic2025mcpcode} is the
+clearest articulation of all three at once.
+
+\begin{enumerate}[label=(\arabic*),leftmargin=2em,itemsep=0.4em]
+\item \textbf{Composition.} A single Python turn can compose several
+  primitives into one expression --- iterate over a list, transform
+  each element, sort, slice, branch on a result. With JSON tool
+  calls this requires one round-trip per primitive, with the
+  intermediate state stored in conversation history. For a task
+  that touches five tools, a programmatic agent makes one model call
+  where a JSON-tool-call agent makes five.
+\item \textbf{Library access.} Anything available to the interpreter
+  --- \code{numpy}, \code{requests}, an in-process vector store, the
+  user's own Python helpers --- is in scope without per-tool schema
+  work. The cost of ``adding a tool'' is the cost of writing a
+  Python function and putting it on the import path.
+\item \textbf{Context efficiency.}
+  Section~\ref{sec:context} argued that the schemas we send for
+  every tool fill the prompt. Programmatic tool calls flip this on
+  its head: instead of \emph{advertising} every tool in the system
+  prompt, the agent \emph{imports} a tool the moment it needs it.
+  The catalogue collapses from a fixed prompt overhead into a
+  per-line cost paid only on lines that actually use the tool.
+\end{enumerate}
+
+\subsection{The shape of a programmatic exchange}
+\label{sec:codeact-shape}
+
+Consider a small task: ``find the three top-priority unread issues
+on the project board, summarise each, and email the summaries to my
+team.'' With JSON tool calls the transcript looks like this:
+
+\begin{lstlisting}[caption={JSON-tool-call transcript: five round-trips, four intermediate states.},label=lst:json-shape]
+> tool_call: list_issues(project="P1", state="open")
+< tool_result: [<200 lines of JSON, 50 issues>]
+> tool_call: list_issues(project="P1", state="open", priority="high")
+< tool_result: [<60 lines of JSON, 15 issues>]
+> tool_call: list_issues(project="P1", state="open", priority="high",
+                         unread=true, sort="priority", limit=3)
+< tool_result: [<12 lines of JSON, 3 issues>]
+> tool_call: summarise(text="...issue 1...")
+< tool_result: "..."
+> tool_call: summarise(text="...issue 2...")
+< tool_result: "..."
+> tool_call: summarise(text="...issue 3...")
+< tool_result: "..."
+> tool_call: send_email(to="team@", body=<concatenated summaries>)
+< tool_result: ok
+\end{lstlisting}
+
+\noindent
+Eight round-trips; the intermediate JSON dumps live in the context
+forever; the model has to plan in increments because it cannot
+condition on the full result list before issuing the next call.
+The same task as a single Python program is one round-trip:
+
+\begin{lstlisting}[language=Python,caption={Programmatic equivalent: one round-trip, no intermediate JSON in context.},label=lst:py-shape]
+issues = list_issues(project="P1", state="open",
+                     priority="high", unread=True)
+top3   = sorted(issues, key=lambda i: -i.priority_score)[:3]
+body   = "\n\n".join(summarise(i.description) for i in top3)
+send_email(to="team@", body=body)
+\end{lstlisting}
+
+\noindent
+The model emits this as one block of code. The runtime executes it
+in a sandboxed interpreter and feeds back the
+\code{send\_email} return value (and any exception) on the next
+turn. The intermediate \code{issues}, \code{top3}, and \code{body}
+never enter the conversation history at all --- they live in the
+interpreter's variable scope and disappear when the program ends.
+Anthropic reports a 98\% reduction in tokens-per-task on
+representative agent benchmarks for exactly this
+reason~\citep{anthropic2025mcpcode}.
 
 \begin{remarkbox}
 \small
@@ -963,6 +1158,261 @@ strengths. We expect this trend to continue: future agent harnesses
 will treat code execution, not JSON dispatch, as the default
 mechanism for action.
 \end{remarkbox}
+
+\subsection{Safety inherits from the shell}
+\label{sec:codeact-safety}
+
+A programmatic-tool-calling agent is, in security terms, a shell
+agent in disguise. Whatever the model emits will be executed in an
+interpreter that has access to the file system, the network, and
+the user's libraries. Every concern of \S\ref{sec:sandbox} applies,
+in stronger form, here. The two recommendations of that section ---
+sandbox the environment; run on version-controlled files --- are
+the minimum bar. In practice the additional control most teams add
+is an allow-list of importable modules: the executed code may
+\code{import requests} but not \code{import os}; it may call any
+of the agent's own helpers but cannot reach into the surrounding
+process. This is not bulletproof (a malicious payload can encode
+nasty things in the modules that \emph{are} allowed) but it
+narrows the blast radius substantially.
+
+\section{Connecting Tools to Agents}
+\label{sec:mcp}
+
+The previous section argued for code execution as the right action
+shape. A complementary question is the engineer's day-to-day one:
+\emph{my agent needs to talk to a system that the harness does not
+already know about. What is the cheapest path that works?} Two
+broad answers dominate practice. The first is to put a
+protocol-speaking server in front of the system --- in 2026 this
+almost always means an \emph{MCP server}, after the Model Context
+Protocol introduced by Anthropic in late
+2024~\citep{mcp2024spec,anthropic2025mcpcode}. The second is to
+ignore the protocol layer and let the agent use the tool's
+existing API or CLI directly, exactly as a human developer would.
+
+Both approaches are deployed at scale today, and neither is
+universally better. We treat them in turn and close the section
+with concrete recommendations on when each fits.
+
+\subsection{Approach A: Wrap the tool in an MCP server}
+\label{sec:mcp-approach}
+
+\paragraph{What it is.}
+An MCP \emph{server} exposes capabilities; an MCP \emph{client} ---
+typically the agent's host --- discovers and invokes them. Servers
+and clients communicate over JSON-RPC, transported either over
+stdio (for a server running as a subprocess) or HTTP (for a remote
+service). A server advertises three kinds of capability:
+
+\begin{description}[style=nextline,leftmargin=1.5em]
+\item[Tools.] Named functions with a JSON-schema for arguments and
+  a return type --- the same shape we have been calling a tool call
+  throughout this chapter. The novelty is that the tools are
+  discovered at run-time from the server, not hard-coded in the
+  agent.
+\item[Resources.] Read-only data that the agent can include in its
+  context: a file on disk, a row in a database, the contents of a
+  Slack thread. The server decides which resources are exposed and
+  how they are addressed (typically as URIs).
+\item[Prompts.] Pre-authored prompt templates that an agent can
+  invoke by name. Useful for canonical patterns (``review this pull
+  request'', ``write a release note'') that an organisation wants
+  to share across many agents.
+\end{description}
+
+\paragraph{The integration argument.}
+Without a standard, every (agent, tool) pair is a one-off
+integration. With $M$ agents and $N$ tools the integration cost
+scales as $M \times N$. A protocol flattens it to $M + N$: each
+agent learns to speak the protocol once, each tool learns to speak
+it once, and any pair works. The same argument was made fifteen
+years earlier for the Language Server Protocol, which standardised
+the (editor, language) integration matrix in exactly the same way.
+MCP is to agents what LSP was to IDEs.
+
+\paragraph{What you get.}
+A typical session looks like this. The host starts an MCP server
+as a subprocess, sends a \code{tools/list} request, and receives
+the list of available tools with their schemas. The host
+concatenates these into the model's tool catalogue (or, in the
+programmatic case, exposes them as importable functions). When the
+model emits a tool call, the host translates it into a
+\code{tools/call} JSON-RPC message to the server, waits for the
+result, and feeds it back into the conversation. The server is
+otherwise unaware that an LLM is involved. Because all
+communication goes through JSON-RPC, three secondary properties
+fall out for free: the server holds credentials in one place
+(the agent never sees them); it can keep state across calls (an
+authenticated session, a cached connection); and it offers a
+single chokepoint for capability scoping and audit logging.
+
+\paragraph{What it costs.}
+You have to write the server, or find one that already exists.
+Writing one is non-trivial: a real MCP server is a small piece of
+software that owns authentication, rate-limiting, error
+translation, schema design, and lifecycle. Public servers exist
+for the obvious general-purpose cases --- GitHub, Slack, Linear,
+Postgres, Filesystem, web search, browser automation --- and
+adding one of those to an agent harness is a one-line
+configuration change. For an internal API specific to your
+organisation, no such server exists, and writing one is a small
+project of its own.
+
+\subsection{Approach B: Teach the agent the underlying API or CLI}
+\label{sec:mcp-api-approach}
+
+\paragraph{What it is.}
+Most useful systems already expose an API or a command-line
+interface. If the agent has access to a programming language or
+a shell --- and \S\S\ref{sec:shell}--\ref{sec:codeact} argued at
+length that it should --- it can use that API directly. The
+``integration'' is then a few sentences in a system prompt
+explaining what the API does, the location of its documentation,
+and how authentication works. The agent reads, plans, and calls.
+
+\paragraph{Why programmatic tool calling makes this viable.}
+The key shift compared to the early days of tool calling is that
+the agent no longer needs to be \emph{told} every endpoint up
+front. With a programmatic action space (\S\ref{sec:codeact}) the
+agent can:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item fetch \code{/openapi.json} or a man page on demand;
+\item write a small Python wrapper around the parts it actually
+  needs;
+\item compose several API calls into one program (the contrast
+  argument of \S\ref{sec:codeact-shape});
+\item discard the wrapper at the end of the task.
+\end{itemize}
+
+Discovery at run-time turns the API surface from a static thing the
+agent must memorise into a thing the agent looks up the moment it
+needs it. This is the same architectural move MCP makes with
+\code{tools/list}; the difference is that here it happens through
+ordinary documentation rather than through a dedicated protocol.
+
+\paragraph{What you get.}
+No server to write, no protocol to update with the upstream spec,
+no extra deployable to operate. The cost of adding a new tool
+collapses to ``put the agent on the network and tell it where the
+docs are''. Operationally this is also closer to how the same
+team would integrate the API in any non-LLM application: a normal
+HTTP client with normal credentials.
+
+\paragraph{What it costs.}
+Three real costs, all manageable but worth naming. First,
+credentials: the agent's interpreter typically needs to read the
+API token, which means it has to live somewhere reachable from the
+sandbox (an environment variable, a local secret store), and the
+sandbox has to be tight enough that this is acceptable. Second,
+prompt drift: the system prompt has to carry enough context for
+the agent to use the API correctly, and that context must track
+the API as it evolves. Third, no shared affordances: every team
+that wires up the same API does it slightly differently, and the
+work is not reusable across harnesses the way an MCP server
+would be.
+
+\subsection{Comparing the two}
+\label{sec:mcp-compare}
+
+The two approaches solve overlapping problems with different
+emphases. Five questions tend to drive the choice.
+
+\paragraph{How many agents will use this tool?}
+For one or two agents in a single team, the per-tool cost of
+writing an MCP server is hard to amortise. For ten agents across
+five teams, MCP wins by construction --- writing one server is
+strictly less work than ten teams each teaching their agent the
+same API.
+
+\paragraph{Will the integration be published?}
+Public MCP servers are a network effect: the value of writing one
+goes up with the number of users it ends up with. If the work is
+going to live behind an internal firewall and serve one team
+forever, the network effect never kicks in.
+
+\paragraph{Does the tool need state across calls?}
+A long-lived SSH session, an authenticated database connection, a
+browser context that survives multiple navigations: an MCP server
+is a natural place to keep these. Direct API/CLI use can hold
+state inside the agent's interpreter, but only for the lifetime of
+that interpreter, and the state vanishes between tasks.
+
+\paragraph{How sensitive are the credentials?}
+An MCP server holds credentials and can refuse to expose them. With
+direct API use, the credentials sit somewhere the agent's
+interpreter can read --- which is often acceptable, especially in
+a tight sandbox, but not always.
+
+\paragraph{Is the team comfortable maintaining a small server?}
+This is the soft factor that often decides in practice. An MCP
+server is yet another piece of software with its own deployment
+story. Teams that already operate a service mesh shrug it off;
+small teams find it heavy.
+
+\subsection{Recommendations}
+\label{sec:mcp-recs}
+
+We give the recommendations as a short decision procedure rather
+than as a single rule, because the choice is genuinely
+context-dependent.
+
+\begin{enumerate}[label=\textbf{(\arabic*)},leftmargin=2.2em,itemsep=0.5em]
+
+\item \textbf{If a published MCP server already exists, use it.}
+  This is the easiest case and the most common one for popular
+  tools (GitHub, Slack, Filesystem, Postgres, web search, browser
+  automation). The cost is one configuration line and the
+  integration is by definition tested by every other user of that
+  server. There is essentially no scenario where rolling your own
+  direct integration is the better answer here.
+
+\item \textbf{If you are building a public-facing tool that other
+  teams will integrate with, ship an MCP server.} The
+  $M \times N \to M + N$ argument is real, and writing the server
+  once is much cheaper for the ecosystem than every consumer
+  re-implementing the same wrapper. This is also the case for an
+  internal platform team that exposes a tool for many other teams
+  inside the company.
+
+\item \textbf{If the tool is internal, used by one or two agents,
+  has an existing API or CLI, and the agent has a programmatic
+  action space, lean on the API directly.} This is the case where
+  the API-base approach genuinely wins: no server to maintain, no
+  schema to keep synchronised, no second deployment story.
+  \S\ref{sec:codeact} argued that a programmatic agent is already
+  a universal API client; honouring that argument means using it
+  here.
+
+\item \textbf{If the tool needs persistent state, hold credentials
+  the agent must not see, or requires careful capability scoping,
+  prefer an MCP server even when (3) would otherwise apply.} The
+  server gives you a chokepoint where these concerns can be
+  handled once and consistently. Reinventing them inside an agent
+  prompt is a known anti-pattern.
+
+\item \textbf{When in doubt, start with (3) and migrate to (2)
+  when the second consumer arrives.} The cost of moving from
+  direct API use to an MCP server later is small --- the wrapper
+  the agent has been generating amounts to most of the server
+  already --- whereas the cost of writing a server up front for a
+  consumer that never materialises is the wasted effort itself.
+
+\end{enumerate}
+
+\noindent
+A final caveat applies to both approaches. Neither solves the
+\emph{authorisation} problem. Whether the agent reaches
+\code{send\_email} via an MCP server or a direct \code{curl} to
+the SMTP gateway, \emph{which} emails it is allowed to send is not
+something the integration mechanism enforces; that policy lives in
+the host or in a layer between the host and the tool. Closely
+related is the \emph{trust} problem: an MCP server is software
+that the host runs, and so is any wrapper code the agent writes
+itself. The recommendations of \S\ref{sec:sandbox} apply in full
+to both --- network policy and sandboxing are decided per
+integration, not per protocol.
 
 \section{Outlook: Tool Calls as the Gateway to Agents}
 \label{sec:agents}

@@ -35,3 +35,16 @@ LLMs exceed at writing code. If it can write and execute python code that opens 
 
 ## Outlook: Toolcalls as the gateway to agents
 Essentially, the "toolcalls elicit better llm agents" paper can make a nice transition into an agents chapter.
+
+4th of May 2026, additions (done, have been added):
+### Toolcalls and Context
+We want many tools, but every tool uses context. 
+
+Explain context - where do the toolcalls go. How does that even work, if we have json inputs.
+
+
+### Programmatic Toolcalls
+As anthropic suggests.
+
+### MCP
+What does it solve, how does it work.
