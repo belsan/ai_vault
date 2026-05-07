@@ -1,0 +1,176 @@
+% =============================================================
+% Mental Model
+% Chapter order is set in ../main.tex; the rendered chapter number
+% comes from \chapter{} below.
+% =============================================================
+
+\chapter{Mental Model}
+\label{ch:mental}
+
+\todo{Chapter scaffold. Each section has a one- to three-paragraph
+stub indicating intended content. Fleshing out is deferred to a
+later writing pass.}
+
+This chapter develops the working mental model that the rest of the
+book takes for granted. The angle is deliberately narrow: not how a
+transformer is trained, not why attention is a useful operation,
+not the historical chain that runs from RNNs to GPT-5. The reader
+is assumed to be an engineer who will treat the language model as
+a service with a calling convention and who needs to understand
+the model's behaviour --- its strengths, its limits, the cost
+structure of using it --- well enough to design systems that hold
+together. We open with the operational picture, work through the
+mechanics that follow from it, and close with a taxonomy of
+characteristic failures.
+
+\section{What a Language Model Is}
+\label{sec:mental-what}
+
+\todo{Three or four paragraphs. The operational definition: a
+stateless function that maps a sequence of tokens to a probability
+distribution over next tokens, with autoregressive sampling on top.
+Memory is text in the prompt, not hidden state across calls. This
+single fact explains chat history, system prompts, tool
+advertisements, retrieval-augmented context --- all of them are
+``the same place'', namely the input the host hands to the model
+on the next call.}
+
+\subsection{Model types}
+\label{sec:mental-types}
+
+\todo{Short subsection naming the dimensions on which models
+differ, without ranking them.}
+
+\paragraph{Multimodal models.}
+\todo{Vision input, audio input, occasional image output. The
+practical implication for agent design is that some tools that used
+to be necessary --- OCR, transcription --- are now subsumed by the
+model itself.}
+
+\paragraph{Open-weights and local models.}
+\todo{Define what ``open weights'' means (the trained parameters
+are downloadable; the training data and code typically are not),
+contrast with hosted closed models, name the practical knobs:
+running on a single workstation, fine-tuning, hosting on private
+infrastructure, quantisation. Forward-reference the
+choosing-a-model discussion in Chapter~\ref{ch:working}.}
+
+\paragraph{Reasoning / thinking models.}
+\todo{Variants in which the model spends extra tokens on a private
+chain of thought before committing to a final answer. Trade-off:
+better at multi-step reasoning, worse at latency and cost.
+Examples (without ranking) of model families that ship thinking
+modes.}
+
+\section{Tokens and Tokenization}
+\label{sec:mental-tokens}
+
+\todo{Two or three paragraphs. What a token is, why subword
+tokenization (BPE) is the dominant choice, the implications:
+strawberry-style failures, the cost asymmetry across scripts and
+languages, code denser than prose, the rough rule of thumb
+``1000 tokens \(\approx\) 750 English words''. Defer the deep
+treatment of the failure mode itself to the strawberry section in
+Chapter~\ref{ch:toolcalls}; here we just plant the concept.}
+
+\section{The Context Window}
+\label{sec:mental-context}
+
+\todo{Short. Nominal context vs effective context: the
+``lost-in-the-middle'' phenomenon, the empirical observation that
+recall on facts placed in the middle of a long context degrades
+sharply, and that effective utility caps out well below the
+advertised maximum. Forward-reference the
+Tool-Calls-and-Context section of Chapter~\ref{ch:toolcalls} for
+the agent-side implications. Detail of \emph{what fills} the
+context (system prompt, tool catalogue, history, tool results)
+lives there, not here.}
+
+\section{Sampling and Determinism}
+\label{sec:mental-sampling}
+
+\todo{What temperature, top-k, top-p are at the level of intuition.
+Greedy decoding at temperature zero. The catch: ``temperature 0''
+is not actually deterministic across providers, because of
+batching, hardware variation, and silent model updates. This has
+direct consequences for testing agents
+(Chapter~\ref{ch:reliable}). Mention seed parameters where they
+exist and where they do not.}
+
+\section{Embeddings}
+\label{sec:mental-embeddings}
+
+\todo{Short. An embedding model maps a piece of text to a
+fixed-length vector such that semantically similar texts get
+nearby vectors. Practical facts the reader needs: typical
+dimensionalities (512, 768, 1024, 1536); cosine similarity / dot
+product as the comparison function; dramatically cheaper per call
+than chat models; the existence of dedicated embedding models
+distinct from chat models. Defer the \emph{use} of embeddings
+(vector stores, retrieval, memory, deduplication) to the
+agent-context chapter where RAG is treated. Frame here as
+``another thing the same family of models can do, with a different
+output shape.''}
+
+\section{Strengths and Failure Modes}
+\label{sec:mental-failures}
+
+\todo{The substantive section. A small taxonomy of what language
+models are good at and what they consistently fail at, with the
+mechanism for each failure named. This is the section that pays
+for the rest of the chapter --- the engineer who has internalised
+it will design systems differently.}
+
+\subsection{What models are good at}
+\label{sec:mental-strengths}
+
+\todo{One paragraph. Strong: language production and comprehension;
+code; pattern completion; well-known facts that were dense in
+training data; transformations and summarisations of given text;
+in-context learning from a few examples.}
+
+\subsection{Tokenizer-level failures}
+\label{sec:mental-tok-fail}
+
+\todo{Counting characters, manipulating individual letters, exact
+arithmetic on long numbers. Forward-reference
+\S\ref{sec:strawberry}, which works the canonical example through.}
+
+\subsection{Hallucination}
+\label{sec:mental-hallucination}
+
+\todo{The model produces plausible content that is not true. Why
+this happens (the training objective rewards plausibility, not
+truth). Mitigations: tools that ground the model in real data
+(\S\ref{sec:taxonomy}), retrieval, verifiers (the Lean example
+from \S\ref{sec:intro-now}).}
+
+\subsection{Sycophancy and instruction drift}
+\label{sec:mental-sycophancy}
+
+\todo{The model agrees too readily with the user's framing, even
+when the framing is wrong. Related: over long contexts the model
+drifts away from the original instruction in the system prompt.
+Implications for agent design: do not assume that pushback
+survives disagreement; periodically re-anchor the system prompt.}
+
+\subsection{Sensitivity to phrasing and formatting}
+\label{sec:mental-sensitivity}
+
+\todo{Small changes to the prompt --- punctuation, ordering of
+examples, capitalisation --- can produce non-trivially different
+outputs. This makes evaluation subtle (Chapter~\ref{ch:reliable})
+and prompts brittle. Forward-reference the prompting-craft
+chapter (Chapter~\ref{ch:tools}).}
+
+\subsection{Distributional and adversarial fragility}
+\label{sec:mental-fragility}
+
+\todo{Models perform well on inputs that resemble their training
+distribution and worse on inputs that do not. Adversarial
+inputs --- including prompt injection, treated in
+Chapter~\ref{ch:reliable} --- exploit this gap.}
+
+% Structured Outputs has been moved to Chapter~\ref{ch:working},
+% \S\ref{sec:structured}. It is more naturally a property of how
+% one calls a model than of the model itself.

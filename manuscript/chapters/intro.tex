@@ -1,0 +1,331 @@
+% =============================================================
+% Introduction
+% Chapter order is set in ../main.tex; the rendered chapter number
+% comes from \chapter{} below.
+% =============================================================
+
+\chapter{Introduction}
+\label{ch:intro}
+
+For most of computing's history, ``artificial intelligence'' was a
+stage prop rather than a tool. Generations of science fiction
+trained us to expect AI to arrive as a singular event --- HAL
+waking up, Skynet going live, Data being switched on, the doors of
+the Enterprise's main computer parting for a voice that knew
+everything. What actually happened, beginning in late~2022 and
+accelerating without pause through~2026, was both less dramatic and
+more disruptive than the fiction predicted. Language models stopped
+being curiosities and started being useful. The change crept into
+editors, into terminals, into spreadsheets, into the way people
+read papers and wrote emails, before anyone had agreed on a
+vocabulary for what was happening.
+
+\noindent
+This book is for the engineer asked to build something on top of
+that change.
+
+\section{Where We Are}
+\label{sec:intro-now}
+
+The most reliable way to take stock of what large language models
+can do today is to look at what has already been done with them.
+Three examples, each in a different domain, are enough to set the
+scale.
+
+In February~2026, Anthropic published the result of an internal
+experiment in which sixteen instances of Claude Opus~4.6, working
+in parallel and coordinating through a shared workspace, wrote a
+hundred-thousand-line C compiler in Rust, with backends for x86,
+ARM, and RISC-V, capable of building the Linux~6.9
+kernel~\citep{anthropic2026compiler}. The agents ran for roughly
+two thousand sessions and consumed around twenty thousand dollars
+of API credit. There was no central architect; there was no human
+reviewing each commit. The compiler that came out is not a drop-in
+replacement for GCC, but it boots an operating system.
+
+In December~2025, the Erd\H{o}s problem~\#728 --- a number-theoretic
+conjecture that had been open for decades --- was settled by a pair
+of language-model systems working in tandem: GPT-5.2~Pro for
+informal reasoning and the Aristotle theorem prover for
+\emph{Lean}-verified formal proof~\citep{tao2025erdos}. The
+resolution is the first Erd\H{o}s problem widely regarded as having
+been solved autonomously by an AI system. The verifier rules out
+hallucinated proofs by construction, which is what makes the result
+trustworthy in a way that an unaided model's output is not.
+
+In January~2026, a research group at KAIST reported a workflow in
+which a language model proposes structural redesigns of materials
+that are difficult to synthesise, with the proposals filtered by
+chemistry-informed rules. Of the top hundred candidates, thirty-four
+matched experimentally synthesised structures that were not in the
+training data~\citep{kaist2026materials}. The model did not discover
+new chemistry; it explored a vast combinatorial space too quickly
+for a human to match, with the chemistry kept honest by tools the
+model could call.
+
+The common thread runs through every example. None of these is a
+naked language-model achievement. Each one is a \emph{system} ---
+a model in a loop with executors, verifiers, search procedures, and
+human-defined oversight. The model is the engine; the system is
+the vehicle.
+
+\section{A Moving Target}
+\label{sec:intro-target}
+
+The texture of the field is one of constant motion. Frontier model
+families are revised every few months. Per-token prices have fallen
+by more than an order of magnitude since~2023. The lineup of major
+providers has reshuffled twice in the time it has taken to write
+this book. Open-weights models, scarcely usable for serious work in
+2023, now run usefully on a developer's laptop, and several of them
+sit close to the closed frontier. Specialised tooling --- agent
+harnesses, vector stores, eval frameworks, integration protocols ---
+churns at a rate that would embarrass any other corner of software
+engineering.
+
+Two consequences for the reader. First, anything written about
+specific models, prices, or rankings is out of date by the time it
+is printed. We will name names where it helps the reader place
+themselves --- Anthropic's Claude, OpenAI's GPT, Google's Gemini,
+Meta's Llama, Alibaba's Qwen, DeepSeek, Mistral, Google's Gemma ---
+but we will not stake the argument on which model is best at what.
+Second, the architectural patterns underneath the churn have proved
+more stable than one might fear. The agent loop, the tool-call
+abstraction, the chat-message structure, the trade-offs between
+context, cost, and capability --- these were already legible
+in~2024 and have not changed shape since. \emph{Those} are what we
+write about. Where the book makes a recommendation, it is about a
+pattern, not a product.
+
+A note on tone. The hype around language models is real, loud, and
+will not subside on its own. The dismissiveness around them, in
+some quarters, is also real. Both attitudes lead the engineer
+astray. The most useful disposition for the reader of this book is
+the one a working programmer brings to any other powerful tool: it
+does some things well, others poorly; it has failure modes that
+matter; it rewards careful design and punishes lazy assumptions; it
+is now part of the toolchain whether one likes it or not.
+
+\section{How We Got Here}
+\label{sec:intro-history}
+
+A history of how language models became what they are could fill a
+book of its own. Three milestones are enough to orient the reader.
+
+The first is the architectural shift. In~2017,
+\citet{vaswani2017attention} introduced the transformer: a neural
+network architecture that processed sequences using attention
+rather than recurrence, scaled almost embarrassingly well with
+parameter count and data, and proved durable enough that almost
+every language model of consequence since has been a variant of it.
+The decade between the transformer paper and now is a story of
+training larger and larger models on more and more data, and of
+discovering, repeatedly, that capability emerges from scale in ways
+the architects had not predicted.
+
+The second is the public moment. In November~2022, OpenAI released
+ChatGPT --- a chat interface to a fine-tuned variant of GPT-3.5 ---
+and the world abruptly noticed. The model was not, by the technical
+standards of the field, a leap; the interface was. For the first
+time, a non-specialist could ask the system to do useful things in
+plain English and get useful things back. The downstream effects
+were both political (every large company suddenly had an AI
+strategy) and technical (every other lab raced to ship competitors;
+open-weights releases proliferated; price-per-token began its
+collapse).
+
+The third milestone is the one this book starts from. In~2023, the
+agent turn began: \citet{yao2023react} formalised the
+reasoning-and-action loop; OpenAI shipped function-calling APIs that
+let models emit structured tool requests; \citet{wang2024codeact}
+argued that the right action shape was executable code; Anthropic
+introduced the Model Context Protocol in late~2024, standardising
+the way agents discover tools. Each of these moves added one piece
+of the substrate on which today's agents are built. The C compiler,
+the Erd\H{o}s proof, and the materials redesign of
+\S\ref{sec:intro-now} are among the first systems to use the whole
+substrate at once.
+
+\section{From Models to Systems}
+\label{sec:intro-systems}
+
+If the reader takes one thing from this introduction, let it be
+this: a contemporary language model is not, by itself, the artefact
+worth designing around. The artefact is the \emph{system} that
+wraps the model. Recognising this changes the questions one asks at
+the architecture stage, the metrics one tracks at the operations
+stage, and the failures one prepares for at the production stage.
+
+We will use the word \emph{agent} throughout this book in the
+following narrow sense.
+
+\begin{definitionbox}
+An \textbf{agent} is a system in which a language model
+repeatedly takes actions, observes the results of those actions,
+and decides what to do next, until it judges the assigned task
+complete. The actions are taken via \emph{tools}: external pieces
+of code that the model can invoke and whose return values are fed
+back into its context. The system is the assembly of model, tool
+inventory, control loop, memory, and policy that turns a single
+turn of generation into work in the world.
+\end{definitionbox}
+
+\noindent
+Returning to the achievements of \S\ref{sec:intro-now} with this
+definition in hand: the C compiler is an agent system in which
+each Claude instance had a shell tool, a workspace, a build runner,
+and a coordination protocol with its peers; the Erd\H{o}s result
+is an agent system in which the language model proposed proof
+sketches that a Lean verifier accepted or rejected; the materials
+redesign is an agent system in which the model generated candidate
+structures that chemistry-informed filters either propagated or
+discarded. In each case, the model on its own would have produced
+plausible-looking output that did not work. The system around the
+model was what produced output that did.
+
+A great deal of the book's content amounts to a careful unpacking
+of this picture. What tools to give an agent, and how. How to
+manage the context that the model sees on each turn. How to keep
+the agent's behaviour reliable as the surface of the task grows.
+How to defend the system against inputs the model was never
+trained to handle adversarially. None of this is glamorous;
+all of it is decisive.
+
+\section{The Approach}
+\label{sec:intro-approach}
+
+Three commitments shape the chapters that follow. None is
+contentious in isolation; together they distinguish this book from
+much of the surrounding literature, and the reader will benefit
+from having met them before encountering the technical material.
+
+\paragraph{Tools, not internals.}
+Andrew Ng's framing of AI as ``the new electricity'' is by now a
+well-worn analogy, and Karpathy has refined it specifically for
+language models~\citep{karpathy2025software}: the model is a
+utility, paid for by the token, served at scale by a small number
+of providers, and consumed by everyone downstream. We adopt that
+framing throughout. The model is treated as a service with a
+calling convention, not as a research artefact whose internals we
+are responsible for explaining. Where understanding \emph{how} a
+transformer is trained would help an engineer make a better
+decision, we mention the relevant fact and move on; where it
+would not, we leave it out. The reader who wants the internals
+has the original
+literature~\citep{vaswani2017attention}, several
+excellent textbooks, and a flourishing ecosystem of explainers;
+we do not compete with them. The bargain is the same one
+electrical engineers struck a hundred years ago: we do not need
+to know how a generating station works in order to wire a
+building, but we do need a precise mental model of voltage,
+current, and the circuit at hand.
+
+\paragraph{Reproducible claims.}
+A great deal of writing about language models is, at the time of
+writing, somewhere between vague advice and pseudoscience.
+Recommendations of the form ``use this prompting trick to get
+better results'' circulate freely without ever showing what
+``better'' means or what the comparison is. We try not to do that
+here. Every substantive claim about model behaviour is paired
+with a concrete, runnable example: a script in
+\fname{manuscript/scripts/}, an output the reader can reproduce,
+and where the result is sensitive to model choice, an explicit
+note about what was used. The reader does not have to take our
+word for any claim about prompting, tool calling, or evaluation;
+the experiments are there to be run.
+
+This commitment has an immediate consequence for the choice of
+working model. Throughout the book, the default is Gemma~4 served
+locally via Ollama. The reasons are practical, not ideological.
+Closed-weight hosted models change underneath their identifiers
+--- silently, often, and without notice. A reader who runs a
+script today against \code{claude-3.5-sonnet} may, six months
+from now, run the same script against a model that no longer
+exists, or that returns different answers because the underlying
+weights were updated, or because some internal knob was retuned.
+Reproducibility against a moving target is, by definition, not
+reproducibility. Open-weight models pinned to a specific release
+do not have this problem: the artefact the reader downloads today
+is the same artefact the book was written against, and the same
+artefact a reader running the book in 2030 will be able to run.
+
+\begin{updatebox}[title={Update --- the moving frontier}]
+\small
+Two ongoing developments illustrate why reproducibility against
+closed-weight, hosted models is hard. In February~2026, telemetry
+from thousands of Claude Code sessions showed a measured 67\%
+drop in reasoning depth coinciding with Anthropic silently
+lowering the default ``adaptive thinking'' level from high to
+medium without any change to the model
+identifier~\citep{adaptivethinking2026}. Around the same time,
+Anthropic's Sonnet~3.5 and~3.7 --- workhorse models for many
+production deployments only a year earlier --- entered late-stage
+phase-out, with deprecation windows of weeks rather than years.
+Neither development is malicious; both are inherent to the
+closed-weight, hosted-service deployment model. Both are fatal to
+reproducibility against a fixed identifier. A book whose
+experiments are pinned to such a model would already, only a few
+months after publication, no longer be runnable. A book whose
+experiments are pinned to a downloadable release of an
+open-weight model is.
+\end{updatebox}
+
+\paragraph{Learn by example, in pure Python.}
+The third commitment is implementation discipline: the worked
+code in this book is plain Python, written from first principles,
+not built on agent frameworks. We use \code{requests} rather than
+the OpenAI SDK; we reimplement a small wrapper around Ollama's
+HTTP API rather than reach for \code{litellm}; we write our own
+loop in Chapter~\ref{ch:toolcalls} rather than import a
+\code{LangGraph} runtime. This is not a manifesto against
+frameworks --- they are useful, especially for production systems
+with operational concerns the book deliberately keeps out of
+scope. It is a pedagogical choice. A reader who has built a
+tool-calling loop with \code{requests.post} and a \code{for}~loop
+has a working mental model that no amount of framework
+documentation can substitute for. Once that mental model exists,
+picking up a framework is straightforward; the reverse path is
+much harder.
+
+We do use general-purpose libraries where they earn their keep:
+\code{pandas} for tabular work, \code{matplotlib} for plots,
+\code{numpy} where vector operations matter. Nothing here is
+reinvented for its own sake. The line we hold is at frameworks
+that abstract away the agent loop itself, because that loop is
+the subject matter.
+
+Not every example is reproduced inline in the manuscript. Where
+the example is short and central, it is in the text. Where it is
+longer, the manuscript shows the salient pieces and points the
+reader at the full source under \fname{manuscript/scripts/}.
+
+\section{How to Read This Book}
+\label{sec:intro-roadmap}
+
+The book is divided into three parts. The first
+(Chapters~\ref{ch:mental} and~\ref{ch:working})
+develops a working understanding of what a language model is and
+how to call one, at the level of detail a systems engineer needs.
+The second (Chapters~\ref{ch:tools} through~\ref{ch:toolcalls},
+plus the agents chapters that follow) covers the construction of
+agents themselves: prompting craft, tool calling, control loops,
+context engineering, multi-agent coordination. The third part
+(Chapter~\ref{ch:reliable} and the closing chapters)
+addresses the operational concerns of deploying and trusting
+agents in production: security, evaluation, observability,
+and the long-running questions of how to keep a system that
+includes a language model from drifting out from under its
+operators.
+
+The chapters can be read in order, and that is the recommended
+path on a first pass. A reader with prior LLM experience can skim
+Chapters~\ref{ch:mental} and~\ref{ch:working} and start in earnest
+at Chapter~\ref{ch:tools}. A reader whose interest is primarily in
+production reliability will benefit from reading the early
+chapters in any case --- the failure modes treated in
+Chapter~\ref{ch:reliable} are easier to internalise after one has
+seen the architectural patterns they apply to.
+
+We will refer back to this introduction often. The mental picture
+of \emph{model in a loop with tools} is the one the rest of the
+book is built on.

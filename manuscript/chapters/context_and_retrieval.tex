@@ -1,0 +1,221 @@
+% =============================================================
+% Context and Retrieval (case-study chapter)
+% Chapter order is set in ../main.tex; the rendered chapter number
+% comes from \chapter{} below.
+%
+% This is one of the planned interleaved case-study chapters.
+% Pattern: a section or two of theoretical discussion, then a
+% concrete worked example with multiple approaches measured
+% side-by-side. The methodology behind these chapters lives in
+% manuscript/notes/case_studies.md.
+
+\chapter{Context and Retrieval}
+\label{ch:context}
+
+\todo{Chapter stub. Subsection structure laid out below; writing
+deferred until Chapters~\ref{ch:mental} through~\ref{ch:toolcalls}
+have been fleshed out.}
+
+Chapter~\ref{ch:toolcalls} treated the tool call as the unit of
+work. One of the most common things a tool actually does is reach
+into a body of text the model was not trained on --- a private
+codebase, an internal wiki, a freshly-published documentation
+page, a chat history older than the context window --- and bring
+back a relevant slice. This is the territory of \emph{retrieval},
+and it is where Retrieval-Augmented Generation (RAG) lives. The
+chapter has two halves. The first surveys the design space:
+embeddings-based RAG, agentic retrieval, graph-based retrieval,
+and hybrids of the three. The second is a comparative case study
+that runs three of those approaches on the same problem and
+reports the numbers, so the choice does not have to be made on
+intuition alone.
+
+\section{The Problem}
+\label{sec:context-problem}
+
+\todo{One short section. Restate the LLM's blind spot from the
+intro: training cutoff, private corpora, queries about state the
+model cannot have memorised. Map the design space across three
+orthogonal axes.}
+
+\paragraph{Corpus structure.}
+\todo{Unstructured text (manuals, blog posts), structured text
+(code with grep-able identifiers), structured data (database
+rows, knowledge graphs). Each axis end has a different natural
+retrieval method.}
+
+\paragraph{Corpus size.}
+\todo{Fits-in-context vs does-not. Below the threshold,
+``retrieval'' is just paste-the-whole-corpus; above the threshold
+the design space opens up. The threshold has moved with model
+context windows but the question still applies.}
+
+\paragraph{Query shape.}
+\todo{Keyword-precise (the user names a function, an env var, a
+ticket number), semantic-fuzzy (the user describes a behaviour
+without using the right keywords), multi-hop (``find functions
+that call X and also write to the database'').}
+
+\section{Approaches}
+\label{sec:context-approaches}
+
+\todo{One subsection per approach. Theoretical discussion only;
+the runnable code lives in \S\ref{sec:context-case-study}.}
+
+\subsection{Classic RAG with embeddings}
+\label{sec:context-rag}
+
+\todo{Chunk the corpus, embed every chunk, store the embeddings,
+embed the query at run time, retrieve the nearest~$k$, paste
+into the prompt. Trade-offs: chunking strategy is load-bearing;
+the embedding model is the bottleneck on quality; recall on
+multi-hop queries is poor; works at scale once vector indexes
+are involved. The canonical illustrative reference is
+\citet{bendersky2023ragingo}, whose 100-line Go implementation
+is the model for the case study below.}
+
+\subsection{Agentic retrieval}
+\label{sec:context-agentic}
+
+\todo{Hand the agent a shell or a code interpreter and let it
+look. \code{grep}, \code{find}, \code{rg}, \code{curl} for
+external sources, \code{git log} for code history. The agent
+iterates: a first search rarely returns exactly what is needed,
+but the next search is informed by what it just read.
+Trade-offs: works on the structured end of the corpus axis
+(code, configs, logs); poor on narrative text where the right
+keywords do not appear; introduces extra round-trips with the
+model; consumes context as it goes
+(\S\ref{sec:context}). The shell-tool design of
+\S\ref{sec:shell} is the substrate.}
+
+\subsection{Graph-based retrieval}
+\label{sec:context-graph}
+
+\todo{Build a graph (call graph, dependency graph, entity-relation
+knowledge graph), navigate it. The agent's queries become graph
+queries: ``functions that call \code{X}'', ``papers that cite
+\code{Y}'', ``people who report into \code{Z}''. Trade-offs: graph
+construction is expensive; the schema is design work; multi-hop
+queries that frustrate RAG and grep are this approach's
+strength. Often the right choice for code repositories, large
+structured knowledge bases, and any retrieval task with explicit
+relations to traverse. We sketch the design here; the case study
+implements it conceptually rather than fully.}
+
+\subsection{Hybrid approaches}
+\label{sec:context-hybrid}
+
+\todo{The interesting question is rarely ``which one'' but
+``which combination''. A common pattern is:
+keyword/grep first (cheap, exact); embeddings on miss (semantic,
+fuzzy); graph for the explicit-relation queries (correct,
+expensive). The agent is a natural orchestrator for this stack
+because it can decide which to try based on what the query looks
+like. We work the hybrid up in the case study below.}
+
+\section{Case Study: the Bendersky Problem, Modernised}
+\label{sec:context-case-study}
+
+\todo{The substantive section. Three implementations of the same
+task, run on the same benchmark, with measurable results.}
+
+\subsection{Setup}
+\label{sec:context-setup}
+
+\todo{The original problem from
+\citet{bendersky2023ragingo}: answer questions about the Go
+documentation that the model was not trained on. Restate as: a
+read-only corpus of $\sim$300 Markdown files; a benchmark of
+20~hand-written questions covering the three query-shape buckets
+(keyword, semantic, multi-hop); a fixed evaluation rubric; a
+fixed Gemma~4 / Ollama setup. All inputs and outputs go into
+\fname{manuscript/scripts/case-studies/context-and-retrieval/}.}
+
+\subsection{Approach A: Classic RAG}
+\label{sec:context-approach-a}
+
+\todo{A faithful Python port of the Bendersky pipeline.
+SQLite for chunk storage; OpenAI's
+\code{text-embedding-3-small} or a local equivalent for
+embeddings; cosine similarity in a loop (no vector DB, since the
+corpus is small enough); top-3 chunks pasted into the prompt.
+Approximately 100~lines.}
+
+\subsection{Approach B: Agentic Retrieval}
+\label{sec:context-approach-b}
+
+\todo{The Chapter~\ref{ch:toolcalls} tool-call loop, with two
+tools: \code{shell} (so the agent can grep, find, cat) and
+\code{web\_search} (for queries that genuinely need an outside
+source). No embeddings, no SQLite. Approximately 50~lines on top
+of code we already wrote.}
+
+\subsection{Approach C: Hybrid}
+\label{sec:context-approach-c}
+
+\todo{Approach B with the embeddings index of Approach A
+exposed as a third tool, \code{semantic\_search}. The agent
+chooses freely between \code{shell} and \code{semantic\_search};
+the system prompt nudges it toward the cheaper shell tool first.
+Approximately 30~more lines.}
+
+\subsection{Approach D (sketch only): Graph-Based}
+\label{sec:context-approach-d}
+
+\todo{For the Go documentation corpus, a graph layer is overkill
+and will not appear in the case study's measured comparison. We
+include a half-page sketch of what the graph would look like
+(documents as nodes, with edges for ``links to'' and ``is
+referenced by''), what queries it would unlock (``which doc page
+do most other doc pages link to about
+\code{GOTOOLCHAIN}?''), and a forward reference to the agents
+chapters where graph retrieval becomes load-bearing.}
+
+\section{Measuring the Approaches}
+\label{sec:context-measure}
+
+\todo{The numbers. Each approach is run on the same 20~questions;
+each answer is graded by a fixed rubric (correct / partially
+correct / wrong / refusal); the wall-clock time and token cost
+are recorded. The expected shape of the table:
+Approach~A wins on semantic queries; Approach~B wins on
+keyword and exact-match queries and is dramatically cheaper;
+Approach~C wins overall by combining them. Numbers will be filled
+in once the case-study scripts are written.}
+
+\section{When to Reach for Which}
+\label{sec:context-when}
+
+\todo{Recommendations. The structure mirrors
+\S\ref{sec:mcp-recs}: a handful of named cases, each with a clear
+default and the conditions that flip it.}
+
+\begin{enumerate}[label=\textbf{(\arabic*)},leftmargin=2.2em,itemsep=0.5em]
+\item \todo{If the corpus fits in the context window and the cost
+  is acceptable, do not retrieve. Paste it.}
+\item \todo{If the corpus is structured and the queries are
+  keyword-shaped (code, configs, logs), reach for the agentic
+  approach first. It is cheaper, simpler, and often more accurate.}
+\item \todo{If the corpus is unstructured and the queries are
+  semantic, classic RAG remains the right baseline.}
+\item \todo{If the queries cross the boundary between keyword and
+  semantic --- which most real ones do --- the hybrid is the
+  default.}
+\item \todo{If the corpus has explicit relations the agent will
+  query (call graph, citation graph, entity graph), the graph
+  layer earns its keep. Otherwise it is overkill.}
+\end{enumerate}
+
+\section{Memory: Retrieval Across Time}
+\label{sec:context-memory}
+
+\todo{A short closing section, half a page. Retrieval as treated
+above is per-query: the corpus is fixed, the agent looks something
+up, the conversation moves on. Long-running agents face a related
+but different problem: what to remember from earlier turns of the
+\emph{same} conversation, and how to retrieve it later. The same
+three approaches apply (embed past turns; let the agent grep its
+own scratchpad; build a graph of entities and decisions) with
+different trade-offs. We treat memory in detail in the agents
+chapters; this section establishes the connection.}

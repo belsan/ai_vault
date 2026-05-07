@@ -19,7 +19,7 @@
   \vspace*{2cm}
   {\Huge\sffamily\bfseries\color{accent} A Course on AI Agents}\\[0.6em]
   {\Large\sffamily Lecture notes for engineers building agentic systems}\\[0.8em]
-  {\normalsize\sffamily\itshape Version 0.2 --- April 2026}
+  {\normalsize\sffamily\itshape Version 0.5 --- May 2026}
 }
 \author{
   Sandro Belfanti, PhD\\
@@ -37,9 +37,16 @@
 % --- Main matter ------------------------------------------------
 \mainmatter
 
-\input{chapters/01_prompting.tex}
-\input{chapters/02_llm_fundamentals.tex}
-\input{chapters/03_toolcalls.tex}
+% Chapter order is defined here, not by filenames. Reorder by
+% rearranging these \input lines.
+\input{chapters/intro.tex}
+\input{chapters/mental_model.tex}
+\input{chapters/working_with_llms.tex}
+\input{chapters/tools_of_the_trade.tex}
+\input{chapters/toolcalls.tex}
+\input{chapters/context_and_retrieval.tex}
+% Future agent chapters slot in here.
+\input{chapters/building_reliable_systems.tex}
 
 % --- Bibliography -----------------------------------------------
 \backmatter

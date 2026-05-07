@@ -63,3 +63,8 @@ node_modules/
 
 # --- Misc -----------------------------------------------------
 *.tmp
+
+# Stray test artefact left over from a sandboxed mv-permission probe;
+# the sandbox can't unlink it. Safe to remove with `rm` from a real
+# shell whenever convenient.
+manuscript/chapters/_test_mv_renamed

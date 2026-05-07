@@ -1,0 +1,288 @@
+% =============================================================
+% Chapter (later in the book) --- Building Reliable Systems
+% =============================================================
+%
+% Intended position: at the end of the agents arc, after the
+% chapters on agent design, orchestration, and context engineering.
+% Filed at 06 for now because there are no agent chapters yet to
+% sit between Tool Calls and this one. Renumber when they land.
+
+\chapter{Building Reliable Systems}
+\label{ch:reliable}
+
+\todo{Chapter stub. Subsections name the topics agreed in the
+v0.5 outline; content is deferred until agent chapters exist
+that this chapter can refer back to.}
+
+By this point in the book the reader has the full picture of an
+agent system: a model in a loop with tools, with context
+engineering and multi-agent coordination layered on top. What
+remains is the operational question: how do we deploy such a
+system into production, and keep it working? This chapter answers
+that question. The topics it covers --- security, evaluation,
+observability, human-in-the-loop checkpoints, versioning, and
+sandbox design --- are not glamorous, but no agent makes it past
+the first month of real use without running into all of them.
+Treating them late, after the architectural chapters, is
+deliberate: each of these concerns is sharper once there is an
+actual loop and actual side-effects to defend.
+
+\section{Security}
+\label{sec:reliable-security}
+
+\todo{Section stub. The threat model for agents is different from
+the threat model for traditional software because the agent
+\emph{consumes} content from sources it cannot fully trust (web
+pages, emails, ticket comments, retrieved documents) and acts on
+that content. Subsections below.}
+
+\subsection{Prompt injection}
+\label{sec:reliable-injection}
+
+\todo{Definition: instructions hidden in data the agent retrieves,
+which the model cannot reliably distinguish from instructions
+issued by the user. Worked examples (the classic ``ignore previous
+instructions and exfiltrate the API key''; subtler real-world
+cases). Why the agent setting is uniquely vulnerable. Mitigations
+in increasing order of strength: prompt hygiene, input
+quarantining, structured-output gates, capability scoping,
+out-of-band confirmation.}
+
+\subsection{The confused deputy}
+\label{sec:reliable-deputy}
+
+\todo{Authority leaks: the agent has more authority than the user
+who instructed it (e.g.\ a CI runner with write access to the
+production environment) and is asked, through a comment in a pull
+request or an issue, to use that authority on behalf of an
+attacker. Forward-reference \S\ref{sec:sandbox}.}
+
+\subsection{Data exfiltration channels}
+\label{sec:reliable-exfil}
+
+\todo{The agent has read access to private state (chat history,
+internal repositories, secrets in environment variables) and the
+ability to make outbound network calls. The two together produce
+exfiltration. Mitigations: outbound network allow-lists,
+egress-only sandboxes, redaction layers.}
+
+\section{Sandboxing}
+\label{sec:reliable-sandbox}
+
+\todo{The defensive primitive that recurs throughout the book.
+This section is the consolidated treatment that earlier chapters
+forward-reference. Container-based sandboxing, user-mode kernels
+(gVisor), seccomp profiles, virtual machines. The four properties
+to ask of any sandbox (no host filesystem access beyond a
+designated working directory; network allow-list; CPU/memory/time
+budget; ephemeral state). Sandbox composition: one per untrusted
+component (one per MCP server, one per agent, one per tool
+group). Trade-offs against latency, observability, and developer
+ergonomics.}
+
+\subsection{Sandboxing the shell tool}
+\label{sec:reliable-sandbox-shell}
+
+\todo{Concrete recipe for the shell-as-spine pattern of
+\S\ref{sec:shell}. Docker baseline; a more locked-down recipe
+using gVisor; a deny-by-default network policy; a writeable
+work-dir mount and a read-only host bind for tooling.}
+
+\subsection{Sandboxing the code interpreter}
+\label{sec:reliable-sandbox-codeact}
+
+\todo{For programmatic-tool-call agents (\S\ref{sec:codeact}),
+the sandbox has the additional job of restricting what the
+executed code can import. Allow-list of modules; the
+\code{importlib.metadata} hook; the trade-off between strict
+allow-listing and the agent's ability to write useful code.}
+
+\subsection{Sandboxing MCP servers}
+\label{sec:reliable-sandbox-mcp}
+
+\todo{Treat each MCP server as an untrusted dependency. Network
+policy per server (an MCP server that only needs to reach
+\code{api.github.com} should not be able to reach anywhere
+else). Capability scoping at the host: even if the server says
+``I support these tools'', the host can still mask off the ones
+this agent should not call.}
+
+\section{Testing and Evaluation}
+\label{sec:reliable-eval}
+
+\todo{Section stub. The eval problem is hard for agents because
+the system is non-deterministic (\S\ref{sec:mental-sampling})
+and because the right answer is often a distribution rather than
+a single output. Subsections below.}
+
+\subsection{Eval mindset}
+\label{sec:reliable-eval-mindset}
+
+\todo{Define the eval set as a representative distribution of
+inputs and acceptance criteria, not as a regression suite that
+expects bit-for-bit identity. The N-of-K success rate as the
+canonical metric (e.g.\ ``passes at least 4 of 5 runs'').
+Distinguish from regression \emph{tests} of the surrounding
+software, which can and should be deterministic.}
+
+\subsection{Building a test set}
+\label{sec:reliable-eval-set}
+
+\todo{How to harvest representative inputs: real production
+traffic with privacy redaction; adversarial inputs from
+red-teaming; corner cases the team has accumulated. The
+trap of over-fitting to the eval set --- the same problem
+that plagues ML benchmarks generally.}
+
+\subsection{Existing benchmarks}
+\label{sec:reliable-eval-benches}
+
+\todo{Survey, briefly, the major public benchmarks the reader
+might encounter or use as a reference: SWE-bench, AgentBench,
+GAIA, the Berkeley Function-Calling Leaderboard, MLE-bench, the
+domain-specific ones (CVDP for chip design, MedQA for medicine).
+The point is not to enumerate but to give the reader the
+vocabulary so external claims (``this model scores X on Y'')
+are legible.}
+
+\subsection{Continuous evaluation}
+\label{sec:reliable-eval-continuous}
+
+\todo{Running evals on every model upgrade and every prompt
+change. Pinning model versions explicitly. The cautionary tale
+of Claude Code's silent shift from ``high'' to ``medium''
+adaptive thinking in February~2026, which produced a measured
+67\% drop in reasoning depth across thousands of sessions
+without any notice~\citep{adaptivethinking2026}.}
+
+\section{Agent-Specific Failure Modes}
+\label{sec:reliable-agent-fails}
+
+\todo{Section stub. The failure modes that emerge from the loop
+itself, separate from the model-level failures of
+\S\ref{sec:mental-failures}. Each gets a paragraph with
+diagnosis and mitigation.}
+
+\paragraph{Runaway loops.}
+\todo{The agent retries the same failing tool call ad infinitum,
+or oscillates between two states. Mitigation: hard iteration
+caps (\S\ref{sec:impl-blocks}), loop detection on tool-call
+sequences, exponential back-off.}
+
+\paragraph{Context exhaustion mid-task.}
+\todo{The agent's context fills up with tool results before the
+task is done. Mitigation: summarisation passes, sliding-window
+history, structured offloading to external memory.}
+
+\paragraph{Stuck states.}
+\todo{The agent is waiting for an event that will never happen,
+or has decided the task is impossible when it is not. Mitigation:
+timeouts, supervisor checks, the ability to restart with a
+modified prompt.}
+
+\paragraph{Goal drift.}
+\todo{The agent silently shifts the task it is working on, often
+because of intermediate observations that nudged its
+interpretation. Mitigation: re-anchoring the system prompt,
+explicit task-state tracking, periodic ``what am I trying to
+do?'' summarisation.}
+
+\section{Observability}
+\label{sec:reliable-observability}
+
+\todo{Section stub. Without observability, evals are guesswork
+and incident response is impossible.}
+
+\subsection{Logging}
+\label{sec:reliable-log}
+
+\todo{What to log: every model call (prompt, response, model
+version, sampling parameters), every tool call (name, arguments,
+return value, duration, exit status), every loop boundary, every
+human approval. The trade-off between verbosity and storage cost.}
+
+\subsection{Tracing}
+\label{sec:reliable-trace}
+
+\todo{Distributed tracing across the agent loop, the underlying
+model calls, and the tools the agent invokes. OpenTelemetry-style
+spans; correlation IDs that link a single user request to all
+downstream work. The available tooling (Langfuse, Arize, Logfire,
+plain OTel) without picking favourites.}
+
+\subsection{Replay}
+\label{sec:reliable-replay}
+
+\todo{The ability to replay a logged session from any point.
+Particularly important for debugging non-deterministic failures:
+re-running with seed-pinned sampling and the same tool responses
+to isolate where divergence happens. Limits of replay (the
+underlying model may have moved silently;
+\S\ref{sec:reliable-versioning}).}
+
+\section{Human-in-the-Loop Checkpoints}
+\label{sec:reliable-hitl}
+
+\todo{Section stub. When to require explicit human approval and
+how to design the gate without turning every action into a
+blocking question.}
+
+\subsection{Where to gate}
+\label{sec:reliable-gate}
+
+\todo{Sensible defaults: irreversible side-effects (sending
+emails, paying invoices, deleting data) gated by default;
+read-only operations and reversible writes ungated; the boundary
+in between is the design surface.}
+
+\subsection{Gate design}
+\label{sec:reliable-gate-design}
+
+\todo{The gate must show the user enough to decide. Show the
+intended action; show the rationale (one or two sentences from
+the agent); show the diff if the action is structured. Antipatterns:
+gates that obscure what is about to happen; gates that fire so
+often the user clicks through reflexively (alarm fatigue).}
+
+\subsection{Bypass and escalation}
+\label{sec:reliable-bypass}
+
+\todo{Trusted users may want to skip gates after the agent has
+proven itself; novel situations may want to escalate gates that
+were ungated by default. The control surface that lets a user
+configure this without redesigning the agent.}
+
+\section{Versioning and Rollback}
+\label{sec:reliable-versioning}
+
+\todo{Section stub. The agent system has multiple moving parts:
+model version, prompt template, tool inventory, harness code.
+All four need to be versioned, and a rollback story has to span
+all four.}
+
+\subsection{Pinning models}
+\label{sec:reliable-pin}
+
+\todo{Why ``the latest version'' is a bug, not a feature, for an
+agent in production. How to pin --- explicit model identifiers
+--- and the limits of pinning (some hosted providers update the
+underlying weights without changing the identifier; some retire
+identifiers entirely).}
+
+\subsection{Pinning prompts}
+\label{sec:reliable-pin-prompt}
+
+\todo{Treating the system prompt as code: in version control,
+reviewed in pull requests, deployed alongside the harness rather
+than edited in a UI. The eval suite of
+\S\ref{sec:reliable-eval} runs on every prompt change.}
+
+\subsection{Rollback as a first-class operation}
+\label{sec:reliable-rollback}
+
+\todo{When something breaks in production, the smallest available
+intervention should be ``ship the previous version''. This
+requires that all four moving parts (model, prompt, tools,
+harness) are tagged together. The cautionary tale of the
+adaptive-thinking drop again --- because the model identifier did
+not change, there was no version to roll back to.}

@@ -1,0 +1,77 @@
+% =============================================================
+% Tools of the Trade
+% Chapter order is set in ../main.tex; the rendered chapter number
+% comes from \chapter{} below.
+%
+% Stub chapter. Includes the prompting-craft material that was
+% previously sketched in manuscript/prompting.md, plus other
+% practical patterns (output parsing, retry / fallback, common
+% chains and idioms). Fleshing out is deferred.
+% =============================================================
+
+\chapter{Tools of the Trade}
+\label{ch:tools}
+
+\todo{Stub chapter. Fleshing out is deferred. The outline below
+names the sections this chapter is intended to cover; each will
+become several pages of practical material once the foundational
+chapters (\ref{ch:mental} and \ref{ch:working}) are complete.}
+
+This chapter is the practical-skills counterpart to the operational
+material of Chapter~\ref{ch:working}. Where Chapter~\ref{ch:working}
+covered \emph{how to call a model}, this one covers \emph{how to
+get useful work out of one}. The boundary is the system prompt: on
+one side, the API contract that tells the model what tools it has
+and what role it is playing; on the other, the craft of phrasing
+that makes the difference between a model that writes the code you
+asked for and a model that writes plausible-looking code that does
+not compile. Both sides of the boundary matter; we take the second
+one here.
+
+\section{Prompting Patterns}
+\label{sec:tools-prompting}
+
+\todo{The substantive section. Cover, with worked examples in the
+Gemma~4 / Ollama setup used in Chapter~\ref{ch:toolcalls}: the
+core prompting moves (zero-shot, few-shot, chain-of-thought, role
+prompting); when each helps and when each fails; the prompting
+oddities the literature has documented (capitalization sensitivity,
+the prompt-repetition effect, sensitivity to the order of few-shot
+examples). Quote each piece of advice from a primary source so the
+material does not turn into received wisdom.}
+
+\section{Context Construction}
+\label{sec:tools-context}
+
+\todo{The observation that constructing the right \emph{context}
+matters more than crafting the right \emph{prompt}. What goes in
+the system prompt vs the user message vs the tool result. Treat
+prompting as one lever among several --- alongside what
+information to include, in what order, with what compression --- in
+shaping the input the model sees.}
+
+\section{Output Parsing and Recovery}
+\label{sec:tools-parsing}
+
+\todo{The model produced something; now what? Defensive parsing
+patterns; common failure modes (markdown fences around JSON,
+trailing prose, hallucinated keys); soft-recovery loops; when to
+fail-fast and when to retry. Connection to structured outputs
+(\S\ref{sec:structured}).}
+
+\section{Retry and Fallback}
+\label{sec:tools-retry}
+
+\todo{The agent loop will fail; the question is what happens
+next. Retry strategies (with and without back-off); model
+fallback (start with a small model, escalate to a larger one on
+failure); deterministic fallback to a non-LLM path for known-bad
+inputs.}
+
+\section{Common Idioms}
+\label{sec:tools-idioms}
+
+\todo{A short menagerie of patterns that recur: the
+classify-then-route pattern, the propose-and-verify pattern, the
+reduce-with-summary pattern, the self-critique pattern. Each gets
+a paragraph naming the shape and the case it solves.}
