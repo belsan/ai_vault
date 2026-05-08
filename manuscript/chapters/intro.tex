@@ -55,9 +55,9 @@ trustworthy in a way that an unaided model's output is not.
 
 In January~2026, a research group at KAIST reported a workflow in
 which a language model proposes structural redesigns of materials
-that are difficult to synthesise, with the proposals filtered by
+that are difficult to synthesize, with the proposals filtered by
 chemistry-informed rules. Of the top hundred candidates, thirty-four
-matched experimentally synthesised structures that were not in the
+matched experimentally synthesized structures that were not in the
 training data~\citep{kaist2026materials}. The model did not discover
 new chemistry; it explored a vast combinatorial space too quickly
 for a human to match, with the chemistry kept honest by tools the
@@ -78,7 +78,7 @@ by more than an order of magnitude since~2023. The lineup of major
 providers has reshuffled twice in the time it has taken to write
 this book. Open-weights models, scarcely usable for serious work in
 2023, now run usefully on a developer's laptop, and several of them
-sit close to the closed frontier. Specialised tooling --- agent
+sit close to the closed frontier. Specialized tooling --- agent
 harnesses, vector stores, eval frameworks, integration protocols ---
 churns at a rate that would embarrass any other corner of software
 engineering.
@@ -135,11 +135,11 @@ open-weights releases proliferated; price-per-token began its
 collapse).
 
 The third milestone is the one this book starts from. In~2023, the
-agent turn began: \citet{yao2023react} formalised the
+agent turn began: \citet{yao2023react} formalized the
 reasoning-and-action loop; OpenAI shipped function-calling APIs that
 let models emit structured tool requests; \citet{wang2024codeact}
 argued that the right action shape was executable code; Anthropic
-introduced the Model Context Protocol in late~2024, standardising
+introduced the Model Context Protocol in late~2024, standardizing
 the way agents discover tools. Each of these moves added one piece
 of the substrate on which today's agents are built. The C compiler,
 the Erd\H{o}s proof, and the materials redesign of
@@ -150,9 +150,9 @@ substrate at once.
 \label{sec:intro-systems}
 
 If the reader takes one thing from this introduction, let it be
-this: a contemporary language model is not, by itself, the artefact
-worth designing around. The artefact is the \emph{system} that
-wraps the model. Recognising this changes the questions one asks at
+this: a contemporary language model is not, by itself, the artifact
+worth designing around. The artifact is the \emph{system} that
+wraps the model. Recognizing this changes the questions one asks at
 the architecture stage, the metrics one tracks at the operations
 stage, and the failures one prepares for at the production stage.
 
@@ -186,7 +186,7 @@ model was what produced output that did.
 A great deal of the book's content amounts to a careful unpacking
 of this picture. What tools to give an agent, and how. How to
 manage the context that the model sees on each turn. How to keep
-the agent's behaviour reliable as the surface of the task grows.
+the agent's behavior reliable as the surface of the task grows.
 How to defend the system against inputs the model was never
 trained to handle adversarially. None of this is glamorous;
 all of it is decisive.
@@ -206,7 +206,7 @@ language models~\citep{karpathy2025software}: the model is a
 utility, paid for by the token, served at scale by a small number
 of providers, and consumed by everyone downstream. We adopt that
 framing throughout. The model is treated as a service with a
-calling convention, not as a research artefact whose internals we
+calling convention, not as a research artifact whose internals we
 are responsible for explaining. Where understanding \emph{how} a
 transformer is trained would help an engineer make a better
 decision, we mention the relevant fact and move on; where it
@@ -226,7 +226,7 @@ writing, somewhere between vague advice and pseudoscience.
 Recommendations of the form ``use this prompting trick to get
 better results'' circulate freely without ever showing what
 ``better'' means or what the comparison is. We try not to do that
-here. Every substantive claim about model behaviour is paired
+here. Every substantive claim about model behavior is paired
 with a concrete, runnable example: a script in
 \fname{manuscript/scripts/}, an output the reader can reproduce,
 and where the result is sensitive to model choice, an explicit
@@ -245,9 +245,9 @@ exists, or that returns different answers because the underlying
 weights were updated, or because some internal knob was retuned.
 Reproducibility against a moving target is, by definition, not
 reproducibility. Open-weight models pinned to a specific release
-do not have this problem: the artefact the reader downloads today
-is the same artefact the book was written against, and the same
-artefact a reader running the book in 2030 will be able to run.
+do not have this problem: the artifact the reader downloads today
+is the same artifact the book was written against, and the same
+artifact a reader running the book in 2030 will be able to run.
 
 \begin{updatebox}[title={Update --- the moving frontier}]
 \small
@@ -323,7 +323,7 @@ Chapters~\ref{ch:mental} and~\ref{ch:working} and start in earnest
 at Chapter~\ref{ch:tools}. A reader whose interest is primarily in
 production reliability will benefit from reading the early
 chapters in any case --- the failure modes treated in
-Chapter~\ref{ch:reliable} are easier to internalise after one has
+Chapter~\ref{ch:reliable} are easier to internalize after one has
 seen the architectural patterns they apply to.
 
 We will refer back to this introduction often. The mental picture

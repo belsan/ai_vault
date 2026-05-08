@@ -83,7 +83,7 @@ expensive language models on Earth get wrong. The correct response
 is not to demand that the language model learn to count
 letters\footnote{Although several follow-ups~\citep{xu2024geniusparadox}
 attempt exactly this, by altering tokenization or by training with
-character-level signals.} but to recognise that the language model is
+character-level signals.} but to recognize that the language model is
 the wrong tool for the job and to give it access to the right one.
 This is the core idea of a tool call.
 
@@ -94,7 +94,7 @@ GPT-5.4 announced that the canonical \emph{strawberry} prompt now
 returns \emph{three}, and the company circulated the result as
 evidence that the underlying reasoning had
 improved~\citep{techradar2026strawberry}. Within a day, users
-demonstrated that the fix did not generalise: substituting
+demonstrated that the fix did not generalize: substituting
 \emph{cranberry} produced the wrong answer (one ``r'' instead of
 three), and adding a deliberate misspelling --- ``how many p's are
 in strawpberry?'' --- elicited confidently wrong answers from every
@@ -119,7 +119,7 @@ this chapter: give the model a tool that perceives characters.
   \caption{Claude Opus~4.7 (released 16~April~2026), asked how many
     p's are in the misspelled \emph{strawpberry}, identifies the
     misspelling but still miscounts: the word as spelled contains
-    one ``p'', not two. The behaviour is the same family of error as
+    one ``p'', not two. The behavior is the same family of error as
     the original strawberry case --- an authoritative tone covering
     a tokenizer-level blind spot.}
   \label{fig:opus47-strawpberry}
@@ -244,7 +244,7 @@ Quite a bit of JSON, but importantly, it separates the user's
   \item \textbf{The model emits the call.} If it chooses to invoke
   \code{count\_letter}, the response is no longer free text. In the
   hosted-API case it is a structured \code{tool\_calls} entry; in the
-  plain-text case it is a conventionalised JSON object inside the
+  plain-text case it is a conventionalized JSON object inside the
   assistant's message. The shape, in both cases, is essentially:
 
 \begin{lstlisting}[language=json]
@@ -354,7 +354,7 @@ this chapter as a re-encoding of the same skeleton.
   implementations.} A plain dictionary suffices. The runtime looks up
   the requested name and invokes the corresponding function.
 \item \textbf{A \emph{parser} that turns the model's response into a
-  list of tool calls (or recognises that there are none).} What
+  list of tool calls (or recognizes that there are none).} What
   ``response'' means depends on the transport: a structured field on
   hosted APIs, a substring of free-form text on local models. The
   parser is the most failure-prone component on non-native models
@@ -642,7 +642,7 @@ burden on the front-line model at the cost of deployment complexity.
 \label{sec:taxonomy}
 
 Tool calls began as a way around the strawberry-style limitations of
-language models, but the design generalised quickly. The tools
+language models, but the design generalized quickly. The tools
 deployed in production fall into a small number of families. We list
 them roughly in order of how strongly they extend the model's
 abilities.
@@ -666,11 +666,11 @@ abilities.
   request, paying an invoice, filing a bug. These tools change
   external state and require a different threat model from the
   passive ones above. We return to this in \S\ref{sec:shell}.
-\item[Specialised models.] Image generation, image understanding,
+\item[Specialized models.] Image generation, image understanding,
   speech transcription, code interpreter, and protein structure
   prediction are all routinely exposed as tool calls. The
   ``language'' model becomes a meta-controller routing requests to
-  domain-specialised submodels~\citep{patil2023gorilla}.
+  domain-specialized submodels~\citep{patil2023gorilla}.
 \end{description}
 
 \noindent
@@ -685,7 +685,7 @@ extreme.
 \subsection{Worked examples, one per family}
 \label{sec:taxonomy-examples}
 
-The categories above are easier to internalise alongside concrete
+The categories above are easier to internalize alongside concrete
 tool descriptions. The five examples that follow are deliberately
 trimmed --- we give just enough of the schema to make the call site
 unambiguous --- so they can be read in sequence.
@@ -723,18 +723,18 @@ unambiguous --- so they can be read in sequence.
   modes, and capability gates (\S\ref{sec:sandbox}) live around tools
   of this family.
 
-\item[Specialised model: \code{transcribe\_audio(path:~str)}.] Returns
+\item[Specialized model: \code{transcribe\_audio(path:~str)}.] Returns
   a transcript string. Internally the tool runs a Whisper-class
   speech-to-text model. From the LLM's perspective this is opaque ---
   it sees one schema and one return type --- but the call hides a
   multi-billion-parameter network. \citet{patil2023gorilla} treat
   this routing pattern as the central design problem of agents that
-  span multiple specialised models.
+  span multiple specialized models.
 
 \end{description}
 
 The five examples cover the categories of the previous list with one
-artefact each. A larger production system typically exposes one or
+artifact each. A larger production system typically exposes one or
 two from each family; the numbers we have seen in practice rarely
 exceed twenty before the model's ability to choose the right tool
 becomes the bottleneck rather than the inventory.
@@ -761,7 +761,7 @@ shape of every system we build later in the book.
 \subsection{Where do tool descriptions live?}
 \label{sec:context-prompt}
 
-The tool catalogue is part of the model's input on every turn. When
+The tool catalog is part of the model's input on every turn. When
 a host like Ollama or the OpenAI SDK accepts a \code{tools=[\dots]}
 parameter, what actually happens under the hood is that those tool
 descriptions are formatted into the model's prompt: as a dedicated
@@ -770,15 +770,15 @@ as a JSON-schema list inside the system message in OpenAI's case,
 as a Claude-specific XML block for Anthropic. The exact tokens
 differ; the cost structure does not. A tool description --- name,
 one-paragraph purpose, JSON-schema for arguments --- typically
-serialises to between 100 and 300 tokens once the schema is
+serializes to between 100 and 300 tokens once the schema is
 fully expanded. Twenty tools is therefore on the order of two to
 six thousand tokens, before the user has typed a single character.
 
 This cost is paid \emph{every turn}. The model is stateless across
 HTTP calls, so the host has to re-send the system prompt, the tool
-catalogue, and the conversation history each time. A long-running
+catalog, and the conversation history each time. A long-running
 agent on a 32K-context model can spend a quarter of its window
-carrying around the catalogue and the cumulative
+carrying around the catalog and the cumulative
 tool-call/tool-result transcript before the actual user
 conversation begins. On smaller open-weights models with 8K or 16K
 contexts, the pressure is much sharper.
@@ -814,7 +814,7 @@ search, fetch, and parse repeatedly will, without any care, push the
 oldest user message off the front of the context within a dozen
 iterations.
 
-\subsection{The JSON-serialisation tax}
+\subsection{The JSON-serialization tax}
 \label{sec:context-json}
 
 JSON is the lingua franca of tool calls, but it is not a particularly
@@ -864,13 +864,13 @@ Three patterns are common in production:
   doing a refactor does not need a calendar tool; an email assistant
   does not need a Python interpreter. A small dispatcher that
   inspects the task and selects a relevant subset before invoking
-  the model dramatically reduces the steady-state catalogue size.
-\item \textbf{Tool retrieval.} Treat the tool catalogue as a
+  the model dramatically reduces the steady-state catalog size.
+\item \textbf{Tool retrieval.} Treat the tool catalog as a
   searchable index. The model is given a small \emph{meta-tool}
   (often called \code{find\_tools}) that takes a description of what
   the model is trying to do and returns the schemas of the most
   relevant tools, which the host then promotes into the active
-  catalogue. \citet{patil2023gorilla} formalise this for the case of
+  catalog. \citet{patil2023gorilla} formalize this for the case of
   thousands of APIs, where any other approach is impossible.
 \item \textbf{Lift the abstraction to code execution.} If the model
   emits a Python program that imports tools as functions, the cost
@@ -962,7 +962,7 @@ file persists between shell calls --- the working directory is part
 of the agent's state --- so a longer task can build up a small
 codebase across many turns. Third, this is the smallest possible
 example of an agent that \emph{programs}: the action space includes
-authoring artefacts, not just invoking pre-built tools.
+authoring artifacts, not just invoking pre-built tools.
 \end{examplebox}
 
 \subsection{Risks and sandboxing}
@@ -992,7 +992,7 @@ incident classes:
   the flag I want'', or write configuration files into the user's
   home directory. None of these is catastrophic on their own; over
   hundreds of agent turns they accumulate into an environment the
-  user no longer recognises.
+  user no longer recognizes.
 \end{enumerate}
 
 \begin{warningbox}
@@ -1026,13 +1026,13 @@ each addresses a different failure mode.
   developer's own toolchain is untouched.
 
 \item \textbf{Run the agent on version-controlled files.} Even with
-  a perfect sandbox, the artefacts the agent produces (and edits,
+  a perfect sandbox, the artifacts the agent produces (and edits,
   and \emph{re-edits}) live somewhere. If those files are tracked by
   a version-control system --- ideally with a fresh branch per agent
   session --- every change becomes inspectable, blamable, and
   trivially reversible. \code{git diff} between two agent turns is
   the most-useful single signal we have found for debugging an
-  agent's behaviour. Note the qualification: the agent itself can in
+  agent's behavior. Note the qualification: the agent itself can in
   principle rewrite history (\code{git reset --hard},
   \code{git push --force}), so the version-control host should sit
   outside the sandbox or be a remote the sandbox has no credentials
@@ -1044,7 +1044,7 @@ each addresses a different failure mode.
 
 \noindent
 Sandboxing is the engineering price of the shell-as-spine design. It
-is paid once and amortised across every tool the model might want to
+is paid once and amortized across every tool the model might want to
 add later: an agent that has a shell does not need a separate
 ``write file'' tool, a separate ``run tests'' tool, or a separate
 ``install dependency'' tool, because the shell already provides all
@@ -1053,7 +1053,7 @@ three.
 \section{Programmatic Tool Calls}
 \label{sec:codeact}
 
-The shell tool of \S\ref{sec:shell} is one specialisation of a more
+The shell tool of \S\ref{sec:shell} is one specialization of a more
 general design principle: \emph{the model's action space should be a
 programming language}. \citet{wang2024codeact} make the argument
 explicitly under the name \emph{CodeAct}, in which the agent emits
@@ -1092,7 +1092,7 @@ clearest articulation of all three at once.
   every tool fill the prompt. Programmatic tool calls flip this on
   its head: instead of \emph{advertising} every tool in the system
   prompt, the agent \emph{imports} a tool the moment it needs it.
-  The catalogue collapses from a fixed prompt overhead into a
+  The catalog collapses from a fixed prompt overhead into a
   per-line cost paid only on lines that actually use the tool.
 \end{enumerate}
 
@@ -1100,7 +1100,7 @@ clearest articulation of all three at once.
 \label{sec:codeact-shape}
 
 Consider a small task: ``find the three top-priority unread issues
-on the project board, summarise each, and email the summaries to my
+on the project board, summarize each, and email the summaries to my
 team.'' With JSON tool calls the transcript looks like this:
 
 \begin{lstlisting}[caption={JSON-tool-call transcript: five round-trips, four intermediate states.},label=lst:json-shape]
@@ -1111,11 +1111,11 @@ team.'' With JSON tool calls the transcript looks like this:
 > tool_call: list_issues(project="P1", state="open", priority="high",
                          unread=true, sort="priority", limit=3)
 < tool_result: [<12 lines of JSON, 3 issues>]
-> tool_call: summarise(text="...issue 1...")
+> tool_call: summarize(text="...issue 1...")
 < tool_result: "..."
-> tool_call: summarise(text="...issue 2...")
+> tool_call: summarize(text="...issue 2...")
 < tool_result: "..."
-> tool_call: summarise(text="...issue 3...")
+> tool_call: summarize(text="...issue 3...")
 < tool_result: "..."
 > tool_call: send_email(to="team@", body=<concatenated summaries>)
 < tool_result: ok
@@ -1131,7 +1131,7 @@ The same task as a single Python program is one round-trip:
 issues = list_issues(project="P1", state="open",
                      priority="high", unread=True)
 top3   = sorted(issues, key=lambda i: -i.priority_score)[:3]
-body   = "\n\n".join(summarise(i.description) for i in top3)
+body   = "\n\n".join(summarize(i.description) for i in top3)
 send_email(to="team@", body=body)
 \end{lstlisting}
 
@@ -1219,7 +1219,7 @@ service). A server advertises three kinds of capability:
   how they are addressed (typically as URIs).
 \item[Prompts.] Pre-authored prompt templates that an agent can
   invoke by name. Useful for canonical patterns (``review this pull
-  request'', ``write a release note'') that an organisation wants
+  request'', ``write a release note'') that an organization wants
   to share across many agents.
 \end{description}
 
@@ -1229,7 +1229,7 @@ integration. With $M$ agents and $N$ tools the integration cost
 scales as $M \times N$. A protocol flattens it to $M + N$: each
 agent learns to speak the protocol once, each tool learns to speak
 it once, and any pair works. The same argument was made fifteen
-years earlier for the Language Server Protocol, which standardised
+years earlier for the Language Server Protocol, which standardized
 the (editor, language) integration matrix in exactly the same way.
 MCP is to agents what LSP was to IDEs.
 
@@ -1237,7 +1237,7 @@ MCP is to agents what LSP was to IDEs.
 A typical session looks like this. The host starts an MCP server
 as a subprocess, sends a \code{tools/list} request, and receives
 the list of available tools with their schemas. The host
-concatenates these into the model's tool catalogue (or, in the
+concatenates these into the model's tool catalog (or, in the
 programmatic case, exposes them as importable functions). When the
 model emits a tool call, the host translates it into a
 \code{tools/call} JSON-RPC message to the server, waits for the
@@ -1258,7 +1258,7 @@ for the obvious general-purpose cases --- GitHub, Slack, Linear,
 Postgres, Filesystem, web search, browser automation --- and
 adding one of those to an agent harness is a one-line
 configuration change. For an internal API specific to your
-organisation, no such server exists, and writing one is a small
+organization, no such server exists, and writing one is a small
 project of its own.
 
 \subsection{Approach B: Teach the agent the underlying API or CLI}
@@ -1289,7 +1289,7 @@ agent can:
 \end{itemize}
 
 Discovery at run-time turns the API surface from a static thing the
-agent must memorise into a thing the agent looks up the moment it
+agent must memorize into a thing the agent looks up the moment it
 needs it. This is the same architectural move MCP makes with
 \code{tools/list}; the difference is that here it happens through
 ordinary documentation rather than through a dedicated protocol.
@@ -1323,7 +1323,7 @@ emphases. Five questions tend to drive the choice.
 
 \paragraph{How many agents will use this tool?}
 For one or two agents in a single team, the per-tool cost of
-writing an MCP server is hard to amortise. For ten agents across
+writing an MCP server is hard to amortize. For ten agents across
 five teams, MCP wins by construction --- writing one server is
 strictly less work than ten teams each teaching their agent the
 same API.
@@ -1382,7 +1382,7 @@ context-dependent.
   has an existing API or CLI, and the agent has a programmatic
   action space, lean on the API directly.} This is the case where
   the API-base approach genuinely wins: no server to maintain, no
-  schema to keep synchronised, no second deployment story.
+  schema to keep synchronized, no second deployment story.
   \S\ref{sec:codeact} argued that a programmatic agent is already
   a universal API client; honouring that argument means using it
   here.
@@ -1399,13 +1399,13 @@ context-dependent.
   direct API use to an MCP server later is small --- the wrapper
   the agent has been generating amounts to most of the server
   already --- whereas the cost of writing a server up front for a
-  consumer that never materialises is the wasted effort itself.
+  consumer that never materializes is the wasted effort itself.
 
 \end{enumerate}
 
 \noindent
 A final caveat applies to both approaches. Neither solves the
-\emph{authorisation} problem. Whether the agent reaches
+\emph{authorization} problem. Whether the agent reaches
 \code{send\_email} via an MCP server or a direct \code{curl} to
 the SMTP gateway, \emph{which} emails it is allowed to send is not
 something the integration mechanism enforces; that policy lives in

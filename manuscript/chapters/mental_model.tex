@@ -17,7 +17,7 @@ transformer is trained, not why attention is a useful operation,
 not the historical chain that runs from RNNs to GPT-5. The reader
 is assumed to be an engineer who will treat the language model as
 a service with a calling convention and who needs to understand
-the model's behaviour --- its strengths, its limits, the cost
+the model's behavior --- its strengths, its limits, the cost
 structure of using it --- well enough to design systems that hold
 together. We open with the operational picture, work through the
 mechanics that follow from it, and close with a taxonomy of
@@ -26,52 +26,378 @@ characteristic failures.
 \section{What a Language Model Is}
 \label{sec:mental-what}
 
-\todo{Three or four paragraphs. The operational definition: a
-stateless function that maps a sequence of tokens to a probability
-distribution over next tokens, with autoregressive sampling on top.
-Memory is text in the prompt, not hidden state across calls. This
-single fact explains chat history, system prompts, tool
-advertisements, retrieval-augmented context --- all of them are
-``the same place'', namely the input the host hands to the model
-on the next call.}
+A language model, for the purposes of this book, is a function. The
+argument is a sequence of tokens; the value is a probability
+distribution over what the next token might be. That is the entire
+interface. Everything the engineer does with a model --- chat,
+tool calling, retrieval-augmented generation, agentic loops --- is
+built on top of this single shape.
+
+\begin{definitionbox}
+A \textbf{language model} is a stateless function from a sequence
+of tokens to a probability distribution over a fixed vocabulary
+of \emph{next} tokens. \emph{Memory} is the text the host hands
+the model on the current call; there is no persistent state across
+calls. \emph{Generation} is autoregressive: sample a token from
+the distribution, append it to the input, repeat.
+\end{definitionbox}
+
+\noindent
+Two consequences follow from naming the model ``a function'' so
+deliberately, and they are worth dwelling on because the rest of
+the book leans on both.
+
+The first: a function does not remember. There is no hidden state
+carried across calls, no internal variable that knows what the
+user said five minutes ago, no ``memory'' in any conventional
+sense. The model that processes our second HTTP request is the
+same model that processed our first, with no recollection that the
+first one happened. Anything the model appears to ``know'' about
+the conversation must be in the input it sees on the
+\emph{current} call, because there is nowhere else for that
+knowledge to live.
+
+The second: a function with a probabilistic output is not, by
+itself, a text generator. The model gives us a distribution over
+next tokens; turning a distribution into a single next token
+requires \emph{sampling}. The runtime samples one token, appends
+it to the input, sends the whole thing back to the model, samples
+again, repeats. This is autoregressive generation: each output
+token feeds back into the input that produces the next one.
+Temperature, top-$p$, top-$k$, and the various choices around
+them (\S\ref{sec:mental-sampling}) are the knobs on this loop.
+
+\begin{examplebox}
+\small
+\textbf{One step of the loop.} Given the input
+``\code{The capital of Switzerland is}'', a Gemma-class model
+returns a distribution dominated by the token \code{ Bern}, with
+smaller probability mass on \code{ Berne}, \code{ Zurich},
+\code{ the}, and a long tail of less-likely candidates. Greedy
+sampling at temperature zero picks \code{ Bern}. The host appends
+it to the input, producing
+``\code{The capital of Switzerland is Bern}'', and calls the model
+again. The next-token distribution this time is dominated by
+\code{.}; greedy sampling picks it; the input is now
+``\code{The capital of Switzerland is Bern.}''. And so on, until
+the model emits an end-of-sequence token or the runtime stops it.
+\end{examplebox}
+
+\noindent
+Putting these two facts together: \emph{a language model is a
+stateless conditional sampler over a token vocabulary.} That
+mouthful is worth internalizing, because it explains every
+``memory'' trick the rest of the book will introduce, and every
+restriction that follows from one.
+
+The chat history we hold across multi-turn conversations is text
+the host appends to the input on every turn. The system prompt
+that gives the agent its persona is text at the start of the input
+on every turn. The tool advertisements that tell the model about
+available functions (Chapter~\ref{ch:toolcalls}) are text in the
+input on every turn. The retrieved passages of a RAG system
+(Chapter~\ref{ch:context}) are text in the input on every turn.
+The model's own previous responses, the user's earlier questions,
+the documentation pulled in from a vector store, the reasoning
+steps we asked the model to ``think through'' out loud --- all of
+it is text in the input on every turn. There is no hierarchy of
+importance the model implicitly understands; there is one big
+string, lightly segmented by role tags (\S\ref{sec:work-chats}) so
+the model can tell which part is which.
+
+Once this picture is in place, a great deal of agent design
+becomes legible:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item The \emph{context window} of a model is the maximum length
+  of this input string. Every byte of system prompt, history,
+  tool catalog, and retrieved context counts toward the same
+  budget (\S\ref{sec:mental-context}).
+\item ``Forgetting'' an old turn is, mechanically, just dropping
+  it from the input list before the next call. The model has no
+  perspective on what was there before; nothing complains.
+\item ``Editing'' the model's own previous response is rewriting
+  that part of the input. The model on the next call accepts the
+  rewrite as ground truth. Agent harnesses use this to compress
+  intermediate results.
+\item Agent harnesses with explicit ``memory'' subsystems
+  (Chapter~\ref{ch:context}) are deciding, on every turn, what
+  to put back in this input.
+\end{itemize}
+
+\noindent
+This single fact --- the input on this call is the only place
+memory lives --- is the most useful piece of mental scaffolding
+for everything that follows. We will return to it, sometimes
+explicitly, on every page where a design decision is made about
+what goes into the model's input.
 
 \subsection{Model types}
 \label{sec:mental-types}
 
-\todo{Short subsection naming the dimensions on which models
-differ, without ranking them.}
+Language models differ along several axes that matter for system
+design without changing the underlying mental model. The reader
+will encounter these dimensions repeatedly throughout the book;
+three are consequential enough to name here. We treat the
+operational question of which to pick for a given task in
+Chapter~\ref{ch:working}; this section just maps the territory.
 
 \paragraph{Multimodal models.}
-\todo{Vision input, audio input, occasional image output. The
-practical implication for agent design is that some tools that used
-to be necessary --- OCR, transcription --- are now subsumed by the
-model itself.}
+The interface generalizes naturally beyond text. The input is no
+longer a sequence of text tokens but a sequence of \emph{content
+blocks}, each typed --- text, image, audio, occasionally video.
+The model attends to all of them inside the same context window
+and produces text out the other end. By 2026, vision input is
+standard across the frontier (OpenAI's GPT family, Anthropic's
+Claude, Google's Gemini, Meta's Llama, Google's Gemma); audio
+input is standard on most of the same; native image output
+remains less common and is more often handled by a separate
+specialist model invoked as a tool call
+(\S\ref{sec:taxonomy}). The agent-design implication is that
+several tools which used to be necessary --- OCR for screenshots,
+transcription for voice notes, layout extraction for PDFs --- are
+subsumed by a multimodal model directly. The mental model is
+unchanged: a stateless conditional sampler over a token
+vocabulary, where some of those tokens happen to encode pixels or
+audio frames rather than letters.
 
 \paragraph{Open-weights and local models.}
-\todo{Define what ``open weights'' means (the trained parameters
-are downloadable; the training data and code typically are not),
-contrast with hosted closed models, name the practical knobs:
-running on a single workstation, fine-tuning, hosting on private
-infrastructure, quantisation. Forward-reference the
-choosing-a-model discussion in Chapter~\ref{ch:working}.}
+``Open weights'' means the trained parameters of the model are
+publicly downloadable, typically under a license that permits
+redistribution and fine-tuning. Crucially, ``open weights'' does
+\emph{not} mean ``open source'': the training data and training
+code are usually not released, and the reader who wants to
+reproduce the training run typically cannot. What they
+\emph{can} do is download the weights, run them on their own
+hardware, fine-tune them on their own data, host them on private
+infrastructure, and quantize them for cheaper inference. Each of
+those is impossible with a closed-weight hosted model, and each
+matters for some class of practical use --- private data,
+reproducibility (\S\ref{sec:intro-approach}), regulatory
+constraints, latency budgets, cost ceilings. The trade-off is
+capability: as of 2026 the strongest open-weights models trail
+the strongest closed-weight ones on the hardest benchmarks, but
+the gap closes every quarter and for many practical workloads
+the open-weights option is competitive. Major open-weights
+families to be aware of: Meta's Llama, Alibaba's Qwen, DeepSeek,
+Mistral, Microsoft's Phi, Google's Gemma --- the model this book
+uses by default. Chapter~\ref{ch:working} treats the choosing-a-model
+question in detail; the relevant point here is that ``open
+weights'' is a real and increasingly viable design choice, not a
+hobbyist concession.
 
 \paragraph{Reasoning / thinking models.}
-\todo{Variants in which the model spends extra tokens on a private
-chain of thought before committing to a final answer. Trade-off:
-better at multi-step reasoning, worse at latency and cost.
-Examples (without ranking) of model families that ship thinking
-modes.}
+A relatively recent variant in which the model is trained to
+spend extra tokens on a private chain of thought \emph{before}
+committing to its final answer. The mechanism is the same
+autoregressive loop described above, but the convention is that
+some prefix of the output --- often delimited by special tokens,
+sometimes hidden from the API consumer --- is ``thinking'' rather
+than the user-facing answer; only the post-thinking text is
+returned. The trade-off is straightforward. On tasks that benefit
+from multi-step reasoning --- mathematics, planning, code that
+requires careful tracing, formal verification --- reasoning
+models are noticeably stronger, often by a wide margin. On tasks
+that don't --- lookup, summarization, simple extraction, format
+conversion --- they are merely slower and more expensive, since
+the thinking tokens are still tokens the user pays for. Major
+families that ship a thinking mode as of 2026 include OpenAI's
+o-series, Anthropic's ``extended thinking'', Google's Gemini
+``thinking'' variants, DeepSeek-R1, and Qwen-QwQ. We treat
+reasoning as one axis in choosing a model
+(\S\ref{sec:work-reasoning}), not a separate species; the mental
+model of \S\ref{sec:mental-what} carries over unchanged.
 
 \section{Tokens and Tokenization}
 \label{sec:mental-tokens}
 
-\todo{Two or three paragraphs. What a token is, why subword
-tokenization (BPE) is the dominant choice, the implications:
-strawberry-style failures, the cost asymmetry across scripts and
-languages, code denser than prose, the rough rule of thumb
-``1000 tokens \(\approx\) 750 English words''. Defer the deep
-treatment of the failure mode itself to the strawberry section in
-Chapter~\ref{ch:toolcalls}; here we just plant the concept.}
+The model does not see characters and does not see words; it sees
+\emph{tokens}. A token is the unit of input the model is trained
+on: an integer index into a fixed-size vocabulary, mapped at the
+very first layer of the network to a learned vector in the
+model's embedding space. Everything downstream --- the attention
+pattern, the layer arithmetic, the next-token prediction ---
+operates on these vectors. The character ``r'' has no first-class
+representation inside the model; its existence is implicit in
+whichever tokens happen to contain it, and only to the extent
+that the training corpus correlated those tokens with
+character-level identity in some downstream task.
+
+\subsection{What to train on}
+\label{sec:mental-tokens-what}
+
+The vocabulary cannot grow without bound. Each entry costs an
+embedding vector and a row in the output projection, which means
+both memory and parameters; the model must be told, before
+training begins, that it has exactly $N$ possible tokens to
+predict. Two naive choices for what those $N$ tokens should be
+present themselves immediately, and both fail in instructive
+ways.
+
+\paragraph{Words.}
+Tempting, because language is composed of words and a word-level
+model would be the most efficient at representing common text:
+a sentence of ten words would be a sequence of ten tokens. The
+trouble is that the world does not helpfully restrict itself to
+a fixed vocabulary. Names, brand identifiers, scientific terms,
+neologisms, internet slang, code identifiers, large numbers,
+foreign-language fragments, typos --- every one of these
+produces ``words'' the model has never seen. A purely word-based
+vocabulary either grows unboundedly to chase them all, or falls
+back to a single \code{<UNK>} token that collapses every unknown
+into the same vector. Neither option is acceptable. Real text
+leaks through the cracks of any finite word list, and the model
+must have something to say about \emph{strawpberry},
+\code{f1bcd2}, \emph{Belfanti}, and \code{quaternion} even when
+none of those have appeared in training.
+
+\paragraph{Letters or bytes.}
+The opposite extreme. There are only 256 possible byte values,
+which fits in a single byte of indexing and admits any input
+string without exception. Every hash, every typo, every unknown
+name decomposes into bytes the model has seen many times. The
+trouble here is the other side of the same coin: the model must
+now learn from scratch that \code{t}, \code{h}, \code{e}
+together mean \emph{the}; that \emph{the} appears at the start
+of countless English sentences; that the bigram \code{th} is
+much more common than \code{tg}. The most useful patterns in
+language are not at the byte level, they are several bytes long,
+and a byte-level model burns much of its capacity reconstructing
+those patterns at every position. Sequences also become very
+long: a sentence of ten English words might be sixty bytes,
+six times the work for the same content.
+
+\subsection{The compromise: bin what's frequent}
+\label{sec:mental-tokens-compromise}
+
+The middle ground is to let the data decide. Train the
+vocabulary on the same corpus the model will eventually be
+trained on; give frequent character sequences their own token,
+and reserve single-byte tokens as a fallback for the rare cases.
+The resulting vocabulary mixes granularities: \code{the} is one
+token because it occurs everywhere; \code{ing} and \code{tion}
+are tokens because they recur as suffixes; rare words break into
+several pieces; entirely unfamiliar input falls all the way back
+to bytes.
+
+The dominant algorithm for producing such a vocabulary is
+Byte-Pair Encoding (BPE)~\citep{sennrich2016bpe}, with close
+relatives WordPiece and Unigram in production use. Conceptually
+the recipe is straightforward.
+
+\begin{enumerate}[label=(\arabic*),leftmargin=2em,itemsep=0.2em]
+\item Start with a vocabulary of all single bytes. Every input
+  string is representable as a sequence of these.
+\item Count, across the training corpus, the frequency of every
+  pair of adjacent tokens.
+\item Merge the most-common pair into a single new token, added
+  to the vocabulary. Re-tokenize the corpus.
+\item Repeat until the vocabulary reaches the target size.
+\end{enumerate}
+
+\noindent
+A run that has seen a great deal of English will discover, very
+early, that \code{t} followed by \code{h} is the most common
+pair, and merge it into \code{th}; soon after, that \code{th}
+followed by \code{e} is the most common pair, and merge into
+\code{the}; soon after, that \code{ ing} (with its leading
+space) is worth its own token. Run for long enough on a corpus
+large enough, and the vocabulary contains common English words
+as single tokens, inflectional fragments (\code{ing},
+\code{tion}, \code{ly}), most individual letters, and almost
+everything in between. Modern vocabularies sit somewhere between
+$\sim$50\,000 entries (early GPT-3, Llama~2) and $\sim$256\,000
+(Gemma~3 and~4, GPT-4o). At inference time, the tokenizer that
+converts an input string into a token sequence is a
+longest-match algorithm against this vocabulary.
+
+\subsection{Practical consequences}
+\label{sec:mental-tokens-consequences}
+
+Three implications follow from this design and recur throughout
+the book.
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.4em]
+
+\item \textbf{Token counts are not character counts and are not
+  word counts.} A useful rule of thumb is that 1000~tokens is
+  roughly 750~English words, or about 4000 characters of running
+  English prose. The ratio swings widely: code is denser than
+  prose because indentation, punctuation, and operators each
+  count; structured data (JSON, XML) denser still; rare technical
+  vocabulary denser again. A screen of Python is two to three
+  thousand tokens; the same screen of plain English is twelve to
+  fifteen hundred.
+
+\item \textbf{The cost-per-character is not language-neutral.}
+  BPE training corpora have been overwhelmingly English. Latin
+  scripts share a tokenizer-friendly structure with English and
+  pay a small premium. Cyrillic, Arabic, Devanagari, and CJK
+  scripts pay much more: a Mandarin character can be two or three
+  tokens, because rare characters fall back to byte-level encoding
+  within the tokenizer. On per-token-priced APIs this is a
+  multiplicative cost on every interaction in a non-English
+  language, and on every prompt that carries non-English text.
+
+\item \textbf{Different models use different tokenizers.} Gemma~4
+  ships its own SentencePiece-trained vocabulary of
+  $\sim$256\,000 entries; OpenAI's GPT-4 family uses
+  \code{cl100k\_base}; GPT-4o uses \code{o200k\_base}; Anthropic
+  publishes a \code{count\_tokens} endpoint rather than the
+  tokenizer itself. The same string can take 500~tokens on one
+  model and 600~on another. Counting accurately --- whether to
+  budget context, estimate cost, or fit a passage under a length
+  limit --- requires the tokenizer the target model is actually
+  using.
+
+\end{itemize}
+
+\noindent
+The mechanism is most readable in the small. The example below
+uses OpenAI's \code{o200k\_base} (the encoding behind GPT-4o)
+because it is freely available; the qualitative pattern is the
+same across modern tokenizers.
+
+\begin{examplebox}
+\small
+\textbf{What the tokenizer actually emits.} Each input below is
+followed by its token count and the literal sequence of token
+strings that the tokenizer produced.
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.1em]
+\item \code{"hello world"} --- 2 tokens --- \code{["hello", " world"]}
+\item \code{"strawberry"} --- 3 tokens --- \code{["st", "raw", "berry"]}
+\item \code{"strawpberry"} --- 4 tokens --- \code{["st", "raw", "p", "berry"]}
+\item \code{"def count\_letter(word, letter):"} --- 7 tokens --- \code{["def", " count", "\_letter", "(word", ",", " letter", "):"]}
+\item \code{"François"} --- 2 tokens --- \code{["Fran", "çois"]}
+\item \code{"supercalifragilisticexpialidocious"} --- 11 tokens (rare and broken into syllable-sized pieces)
+\item the five-character Mandarin sentence \emph{n\v{i} h\v{a}o,
+  sh\`{i}ji\`{e}} (``hello, world'') --- 6 tokens, with the
+  comma and the most common characters tokenizing one-to-one and
+  the rarer characters falling back to multi-byte sequences
+\end{itemize}
+
+\noindent
+Note in particular how the misspelling \emph{strawpberry} differs
+from the correct \emph{strawberry}: the inserted \texttt{p}
+appears as a token of its own because the bigram ``rawp'' is not
+in the vocabulary. The model sees the difference between the two
+spellings as a four-vector vs three-vector input, not as a
+single-character change.
+\end{examplebox}
+
+\noindent
+The closing observation is the one that motivates the entire
+strawberry section of Chapter~\ref{ch:toolcalls}: the model has
+no character-level representation of its own input. Any task that
+requires reasoning about individual letters --- counting them,
+permuting them, checking spelling --- is asking the model to
+recover character-level information from token-level vectors,
+which it can do only weakly and unreliably. The full unpacking
+of this failure mode lives in \S\ref{sec:strawberry}; the short
+version here is enough to set up the broader taxonomy of
+\S\ref{sec:mental-failures}, where tokenizer-level failures are
+one cell in the larger picture.
 
 \section{The Context Window}
 \label{sec:mental-context}
@@ -83,7 +409,7 @@ sharply, and that effective utility caps out well below the
 advertised maximum. Forward-reference the
 Tool-Calls-and-Context section of Chapter~\ref{ch:toolcalls} for
 the agent-side implications. Detail of \emph{what fills} the
-context (system prompt, tool catalogue, history, tool results)
+context (system prompt, tool catalog, history, tool results)
 lives there, not here.}
 
 \section{Sampling and Determinism}
@@ -118,7 +444,7 @@ output shape.''}
 \todo{The substantive section. A small taxonomy of what language
 models are good at and what they consistently fail at, with the
 mechanism for each failure named. This is the section that pays
-for the rest of the chapter --- the engineer who has internalised
+for the rest of the chapter --- the engineer who has internalized
 it will design systems differently.}
 
 \subsection{What models are good at}
@@ -126,7 +452,7 @@ it will design systems differently.}
 
 \todo{One paragraph. Strong: language production and comprehension;
 code; pattern completion; well-known facts that were dense in
-training data; transformations and summarisations of given text;
+training data; transformations and summarizations of given text;
 in-context learning from a few examples.}
 
 \subsection{Tokenizer-level failures}
@@ -158,7 +484,7 @@ survives disagreement; periodically re-anchor the system prompt.}
 \label{sec:mental-sensitivity}
 
 \todo{Small changes to the prompt --- punctuation, ordering of
-examples, capitalisation --- can produce non-trivially different
+examples, capitalization --- can produce non-trivially different
 outputs. This makes evaluation subtle (Chapter~\ref{ch:reliable})
 and prompts brittle. Forward-reference the prompting-craft
 chapter (Chapter~\ref{ch:tools}).}

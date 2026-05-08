@@ -19,7 +19,7 @@ among them, set the reader up to actually run a model in one of
 three deployment shapes, define the \code{query\_llm} wrapper that
 every later script in the book will import, walk through the
 chat-message structure that every modern API exposes, treat
-structured outputs as the specialisation of message structure that
+structured outputs as the specialization of message structure that
 powers tool calls, and close with the cost, caching, and latency
 considerations that shape every production system. None of this is
 theoretically deep; all of it is practically necessary.
@@ -42,7 +42,7 @@ elsewhere in the book; it is not to rank them.}
 \todo{Rather than a player-by-player capability table, list the
 axes on which providers differentiate themselves: hosted vs
 open-weights; frontier capability vs commodity-cheap; generalist
-vs reasoning-specialised; long context vs strong-but-short;
+vs reasoning-specialized; long context vs strong-but-short;
 multimodal vs text-only; permissive vs strict on content. Axes
 age much more slowly than rankings, and the reader will use them
 to think about whichever providers exist when they are reading.}
@@ -65,30 +65,375 @@ multi-model orchestration is treated.}
 \todo{Treat ``reasoning'' as one axis of the choice rather than a
 separate section. When extended thinking helps (multi-step
 mathematics, planning, code that requires careful tracing); when
-it does not (lookup, summarisation, simple extraction). Cost
+it does not (lookup, summarization, simple extraction). Cost
 trade-off and latency implications.}
 
-\section{Three Ways to Run a Model}
+\section{Chats: the Message Structure}
+\label{sec:work-chats}
+
+The HTTP API every modern provider exposes is, on the surface,
+a \emph{chat} endpoint. A request carries not one prompt but a
+\emph{list of messages}, each tagged with a role. A response is a
+new message, also tagged with a role, that the runtime is
+expected to append to the list before the next request. This
+structure has the look of a database schema and the importance of
+a calling convention: it determines what we can ask the model
+and what it can answer with. Before writing any code that calls a
+model, we need to know what is in this list and why.
+
+This section is purely about the shape. Prompting craft --- what
+to actually \emph{say} in the messages --- belongs to
+Chapter~\ref{ch:tools}.
+
+\subsection{Why a list, and not a string}
+\label{sec:work-chats-why}
+
+Chapter~\ref{ch:mental} established that a language model is a
+stateless function from a token sequence to a probability
+distribution over next tokens. It has no memory; everything it
+``knows'' about the conversation must be in the input tokens of
+the current request. The chat-message list is the convention by
+which the runtime communicates the structure of that input: which
+parts came from the developer, which parts came from the user,
+which parts the model itself produced earlier, which parts are
+results from tools the model called.
+
+Under the hood, the list is collapsed back into a single token
+sequence using a \emph{chat template} specific to the model.
+Gemma~4 inserts the special tokens \code{<\textbar turn>} and
+\code{<turn\textbar >} around each role boundary; Anthropic's
+hosted models use XML-shaped delimiters; OpenAI keeps the
+template internal and never exposes it. The host that calls the
+API does not need to know any of this, which is the point of the
+abstraction: the list of role-tagged dicts is the contract, and
+the model serializes it however it must.
+
+\subsection{The four roles}
+\label{sec:work-chats-roles}
+
+Every modern provider supports three roles at minimum, plus a
+fourth introduced once tool calls enter the picture.
+
+\begin{description}[style=nextline,leftmargin=1.5em,itemsep=0.4em]
+
+\item[\code{system}] Instructions \emph{from the author of the
+  agent} that frame the entire conversation. Persona, tone,
+  format requirements, the catalog of tools the model is
+  allowed to call (Chapter~\ref{ch:toolcalls}), policy
+  constraints. The system message is conceptually the model's
+  ``standing orders'' for this session. There is typically
+  exactly one, at the start of the list.
+
+\item[\code{user}] What the human (or, in an agent context,
+  whichever upstream system is acting as the user) is asking
+  for in the current turn. Questions, instructions, pasted
+  content, retrieved context.
+
+\item[\code{assistant}] What the model itself has produced
+  earlier in this conversation. The runtime appends an
+  \code{assistant} entry after every model response; on the
+  next request, that entry is back in the input as part of the
+  history.
+
+\item[\code{tool}] The result of a tool call. Introduced in
+  Chapter~\ref{ch:toolcalls}, where we work through the
+  tool-call exchange in detail. Until then, the three roles
+  above are sufficient.
+
+\end{description}
+
+\noindent
+A first-turn conversation is therefore the smallest non-trivial
+list:
+
+\begin{lstlisting}[language=json,caption={The smallest useful messages list: one system frame, one user question.},label=lst:chat-first-turn]
+[
+  {"role": "system", "content": "You are a helpful assistant that answers in one short sentence."},
+  {"role": "user",   "content": "What is the capital of Switzerland?"}
+]
+\end{lstlisting}
+
+\noindent
+The model's response (in the OpenAI shape) is one
+\code{assistant} message:
+
+\begin{lstlisting}[language=json,caption={The response from the model: a single assistant message.},label=lst:chat-first-response]
+{
+  "role":    "assistant",
+  "content": "The capital of Switzerland is Bern."
+}
+\end{lstlisting}
+
+\noindent
+Provider-specific response wrappers vary --- OpenAI nests this
+inside \code{choices[0].message}; Anthropic returns a list of
+content blocks under \code{content}; Ollama uses
+\code{message} directly --- but the inner shape is the same
+\code{\{role, content\}} dict.
+
+\subsection{Multi-turn conversations}
+\label{sec:work-multiturn}
+
+A multi-turn conversation is an append-only list. After each
+exchange the runtime appends two entries: one \code{user} (the
+new question) and one \code{assistant} (the previous model
+response that prompted it). On the next request, the entire list
+is re-sent to the model. This is the operational consequence of
+the model being stateless across HTTP requests: the only place
+``conversation history'' lives is inside the messages list that
+the host hands the model.
+
+\begin{lstlisting}[language=json,caption={A three-turn conversation, immediately before the model's reply to the third user message is generated.},label=lst:chat-multiturn]
+[
+  {"role": "system",    "content": "You are a helpful assistant ..."},
+  {"role": "user",      "content": "What is the capital of Switzerland?"},
+  {"role": "assistant", "content": "The capital of Switzerland is Bern."},
+  {"role": "user",      "content": "And how many people live there?"},
+  {"role": "assistant", "content": "Bern has about 145,000 inhabitants."},
+  {"role": "user",      "content": "What about the metro area?"}
+]
+\end{lstlisting}
+
+\noindent
+Two consequences of this design that the practitioner should
+internalize.
+
+First, \emph{cost grows with conversation length}. Every turn
+re-sends the entire history, so the input-token bill on turn~$n$
+includes the cost of all $n-1$ previous turns. Long conversations
+become expensive in a way that linearly increases per turn.
+\S\ref{sec:work-cost} treats prompt caching, which is the
+provider-side response to this growth.
+
+Second, \emph{the runtime is in charge of memory}. ``Forgetting''
+an earlier turn is just dropping it from the list; ``editing''
+the model's own previous response is just rewriting the
+\code{assistant} entry in place. The model has no opinion about
+either. Agent harnesses with explicit memory management
+(Chapter~\ref{ch:context}) lean heavily on this freedom.
+
+\subsection{The system prompt in practice}
+\label{sec:work-system}
+
+The system prompt is where most of the agent's character lives. A
+useful working rule:
+
+\begin{quote}
+\itshape
+Stable instructions go in the system message; per-turn content
+goes in the user message.
+\end{quote}
+
+\noindent
+``Stable'' here means \emph{constant across the entire
+session}. The model's persona, the response format, the list of
+tools it may call, the policy constraints under which it
+operates --- these belong in \code{system}. The actual question
+the user is asking right now belongs in \code{user}.
+
+The distinction matters for two operational reasons. The first is
+caching: most providers offer prompt caching that hits when the
+prefix of the messages list is identical across requests
+(\S\ref{sec:work-cost-cache}). A stable system prompt followed by
+a variable user message is exactly the layout that lets prompt
+caching pay off. Mixing per-turn content into \code{system}
+breaks the cache.
+
+The second is interpretation: many providers train their models
+to weight \code{system} instructions more strongly than
+\code{user} instructions, on the grounds that the developer is
+more trusted than the end user. The defense-in-depth pattern of
+Chapter~\ref{ch:reliable} relies on this asymmetry: the
+\code{system} prompt sets the rules; an end user (or worse, an
+adversarial input retrieved from the web) cannot easily override
+them just by saying ``ignore previous instructions''.
+
+The deeper craft of writing system prompts that work --- few-shot
+examples, role definitions, what to put first, what to put last
+--- is the subject of Chapter~\ref{ch:tools}, and we leave it
+there.
+
+\section{Interacting with LLMs}
 \label{sec:work-deploy}
 
-The book treats the language model as a service one calls. There
-are three deployment shapes for ``service one called'' that any
-practitioner will encounter, and the choice between them is mostly
-orthogonal to which model is being served. Before continuing, a
-reader should have at least one of the three working: any of the
-later chapters' scripts will run against any of them, with one
-environment variable separating the configurations.
+With the message structure in hand from \S\ref{sec:work-chats}, we
+can now look at the calling mechanics. Two questions remain:
+\emph{where does the model run?} and \emph{how does the call go
+out and come back?} The three subsections that follow this
+introduction work the first question through in detail, one
+deployment shape at a time. The second question is treated here
+at the level of orientation; the \code{query\_llm} wrapper of
+\S\ref{sec:work-wrapper} is the working answer that the rest of
+the book imports.
+
+\paragraph{Where the model runs.}
+There are three deployment shapes that a practical reader will
+encounter. The choice between them is mostly orthogonal to which
+model is being served; a reader who has any one of the three
+working can run any of the book's later code.
+
+\begin{description}[style=nextline,leftmargin=1.5em,itemsep=0.3em]
+\item[Hosted API.] The most common option, and the simplest to
+  start with. OpenAI, Anthropic, and Google expose chat-completion
+  APIs over HTTPS; we never see where the model actually runs, we
+  just hit an endpoint with an API key.
+\item[Local model server.] The model runs on the reader's own
+  hardware. We still call it via an HTTP API --- typically Ollama,
+  which serves a chat-completion endpoint indistinguishable in
+  shape from the hosted ones --- but the server is a process on
+  the local machine.
+\item[Remote model server.] Identical to the local pattern, except
+  the GPU lives in someone else's data center. The reader rents a
+  GPU instance pre-loaded with Ollama, vLLM, or
+  text-generation-inference; the resulting URL is what the
+  \code{query\_llm} wrapper of \S\ref{sec:work-wrapper} is then
+  pointed at. From the calling code's perspective the only
+  difference from the local case is the value of one environment
+  variable.
+\end{description}
+
+\subsection{The anatomy of an LLM call}
+\label{sec:work-anatomy}
+
+Across all three deployment shapes, the calling pattern is the
+same: we POST a JSON body to an HTTP endpoint, and we read a JSON
+body back. The function we are building toward, which the rest of
+the book will import, has a signature of roughly the following
+shape:
+
+\begin{lstlisting}[language=Python,caption={The shape of the wrapper we are heading for. The full implementation is in \S\ref{sec:work-wrapper}.},label=lst:query-llm-simple]
+def query_llm(messages,
+              model:       Optional[str] = None,
+              temperature: float = 0.0,
+              max_tokens:  int = 2048) -> str:
+    """Send `messages` to the configured LLM and return its reply."""
+    ...
+\end{lstlisting}
+
+\noindent
+This subsection looks at the two halves of that call --- what we
+send out, and what we get back --- in turn. The smoke tests of
+\S\S\ref{sec:work-deploy-hosted}--\ref{sec:work-deploy-remote}
+will then exercise both halves against real endpoints.
+
+\paragraph{Request.}
+Three of the inputs are mandatory across every provider, and two
+are optional but almost always supplied.
+
+\begin{description}[style=nextline,leftmargin=1.5em,itemsep=0.3em]
+\item[\code{messages}] The list of role-tagged dicts of
+  \S\ref{sec:work-chats}. This is what the function carries
+  through to the underlying API; nothing else in the call shape
+  depends on whose backend is in use.
+\item[\code{model}] A string identifier picking which model to
+  use. On hosted APIs the choice is often between several
+  frontier models and several cheaper variants; on a local Ollama
+  the choice is whatever has been pulled with \code{ollama pull}.
+\item[An API key.] For hosted backends, the credential that says
+  who is paying for these tokens. For a local Ollama there is no
+  authentication; for a remote server it depends on how the
+  provider has set up access control. The wrapper reads the key
+  out of an environment variable so that scripts are never
+  committed with credentials embedded.
+\item[\code{temperature}] The sampling parameter introduced in
+  \S\ref{sec:mental-sampling}. Zero gives the most-determined
+  output; higher values trade reproducibility for variety. We
+  default to zero throughout the book.
+\item[\code{max\_tokens}] An upper bound on generated tokens. Two
+  reasons it matters: it caps cost on hosted APIs, and it caps
+  latency in agentic loops where a runaway generation would
+  otherwise block the next iteration.
+\end{description}
+
+\paragraph{Response.}
+What comes back is a JSON object. It contains rather more than the
+assistant's reply, and it pays to know what each piece is for
+before reaching past it.
+
+The most important piece, naturally, is the \emph{assistant's
+message itself} --- a \code{\{"role": "assistant", "content":
+"\dots"\}} dict in exactly the shape we saw in
+\S\ref{sec:work-chats-roles}. The runtime is expected to take this
+dict and append it to the messages list before the next request,
+which is how multi-turn conversations grow
+(\S\ref{sec:work-multiturn}).
+
+Wrapped around the message, the response carries several
+operational fields the practitioner will use sooner or later:
+
+\begin{description}[style=nextline,leftmargin=1.5em,itemsep=0.3em]
+\item[Token counts.] How many input tokens were consumed and how
+  many output tokens were generated. These are what billing is
+  computed against on hosted backends (\S\ref{sec:work-cost-cost})
+  and what one tracks when monitoring an agent's context budget
+  in long-running sessions.
+\item[A finish reason.] Why generation stopped. The common values
+  are \code{stop} (the model produced an end-of-sequence token of
+  its own accord), \code{length} (it hit the \code{max\_tokens}
+  cap and was cut off mid-sentence), and, in
+  Chapter~\ref{ch:toolcalls}, \code{tool\_calls} (it produced a
+  structured tool-call request rather than text). Distinguishing
+  these is essential for debugging: a truncated reply is not the
+  same kind of failure as a refusal.
+\item[A response identifier and timing block.] Provider-specific.
+  Useful for logs (correlating a response with a request in a
+  trace) and, on backends that support it, for re-fetching or
+  resuming a generation.
+\end{description}
+
+\noindent
+On top of all this, OpenAI-flavored responses add one more layer
+of wrapping that confuses the reader the first time it shows up:
+the \emph{choices} field. The chat-completion endpoint can be
+asked to generate $n > 1$ candidate completions for the same
+input --- each an independent sample, drawn at the same
+temperature --- and each candidate is one entry in a
+\code{choices} array, with its own \code{message} and its own
+\code{finish\_reason}. In the common case of $n = 1$ (which is
+the default and which the book uses throughout),
+\code{choices[0]} is the only entry and it carries the assistant
+message we want.
+
+This is why the smoke tests in
+\S\S\ref{sec:work-deploy-hosted}--\ref{sec:work-deploy-remote}
+end with the drill-down
+
+\begin{lstlisting}[language=Python]
+print(rsp.json()["choices"][0]["message"]["content"])
+\end{lstlisting}
+
+\noindent
+Reading right to left: \code{rsp.json()} parses the JSON
+response; \code{["choices"][0]} picks the first (only) candidate;
+\code{["message"]} is the role/content dict; \code{["content"]}
+is the assistant's text. It is the standard idiom for ``give me
+the model's reply as a string,'' and one of the things
+\code{query\_llm} of \S\ref{sec:work-wrapper} will hide.
+
+The other backends look slightly different at the top of the
+wrapper but ultimately reach the same place: Anthropic returns
+content blocks under \code{content}
+(\code{rsp.json()["content"][0]["text"]}); Ollama uses
+\code{message} directly without the \code{choices} array
+(\code{rsp.json()["message"]["content"]}). Each is one
+provider-specific path to the same $\{$role, content$\}$ dict.
+
+For the smoke tests below, and for the rest of the book's simple
+tests, this drill-down is all we will use. Token counts, finish
+reasons, and identifiers are the next layer up; we surface them
+in Chapter~\ref{ch:reliable} where production observability
+demands it. Until then, the assistant's text is what we want, and
+\code{["choices"][0]["message"]["content"]} is how we get it.
 
 \subsection{The hosted API}
 \label{sec:work-deploy-hosted}
 
 The simplest route is to pay one of the major providers per token
-and POST to their HTTPS endpoint. OpenAI, Anthropic, and Google
-Gemini all expose chat-completion APIs that are similar in shape
-and trivially callable from Python with \code{requests}. Setup is
-one signup, one API key, one environment variable.
+and POST to their HTTPS endpoint. The provider's API documentation
+gives the specifics --- the URL, the header conventions, the
+exact field names --- and they all look broadly the same.
 
-\begin{lstlisting}[language=bash,caption={Hosted-API setup, OpenAI flavour.},label=lst:setup-hosted]
+\begin{lstlisting}[language=bash,caption={Hosted-API setup, OpenAI flavor.},label=lst:setup-hosted]
 $ pip install requests
 $ export OPENAI_API_KEY=sk-...
 \end{lstlisting}
@@ -181,12 +526,12 @@ A rough hardware sanity guide for Gemma~4:
 \item[\textnormal{NVIDIA GPU, 8~GB VRAM:}] \code{gemma4:e2b} only.
 \item[\textnormal{NVIDIA GPU, 24~GB VRAM:}] \code{gemma4:e4b}
   comfortable, \code{gemma4:26b} usable.
-\item[\textnormal{NVIDIA GPU, 80~GB VRAM (data-centre class):}]
+\item[\textnormal{NVIDIA GPU, 80~GB VRAM (data-center class):}]
   everything, including reasoning-mode variants.
 \end{description}
 
 \noindent
-Numbers are approximate and quantisation-dependent. The reader who
+Numbers are approximate and quantization-dependent. The reader who
 exceeds their hardware by one tier will get correct outputs at
 unreasonable speed; the reader who exceeds by two tiers will run
 out of memory.
@@ -195,7 +540,7 @@ out of memory.
 \label{sec:work-deploy-remote}
 
 The third deployment shape is the local model server's pattern,
-except the GPU lives in someone else's data centre. You rent a GPU
+except the GPU lives in someone else's data center. You rent a GPU
 instance with Ollama (or vLLM, or text-generation-inference)
 pre-installed; you get back a URL; the rest of the book's code,
 including the \code{query\_llm} wrapper of
@@ -237,22 +582,49 @@ subtly different HTTP endpoints. Rather than scatter the
 differences across every script in the book, we define a single
 \code{query\_llm} function that hides them. Every later chapter
 imports this function; the reader can switch between hosted and
-local backends with one environment variable.
+local backends with a one-line change in a \fname{.env} file.
 
 The wrapper sits at \fname{manuscript/scripts/query\_llm.py}; the
 salient pieces are inline below. It is deliberately minimal. There
 is no retry logic, no exponential back-off, no token counting, no
 streaming, and no tool-call handling. Each of those would be
 useful in a production wrapper; none of them belongs in the
-function the book uses for thirty pages of teaching. Tool calls are
-introduced in Chapter~\ref{ch:toolcalls}, which builds a richer
-wrapper on the same backend functions defined here.
+function the book uses for thirty pages of teaching. Tool calls
+are introduced in Chapter~\ref{ch:toolcalls}, which builds a
+richer wrapper on the same backend functions defined here.
+
+\paragraph{Configuration.}
+The wrapper reads its configuration --- which backend, which
+default model, which API key --- from a \fname{.env} file in the
+script's directory, via the \code{python-dotenv} package. A
+template file \fname{.env.example} ships alongside; copying it to
+\fname{.env} and editing it is the entire setup:
+
+\begin{lstlisting}[language=bash,caption={Setting up \code{query\_llm}.},label=lst:wrapper-setup]
+$ pip install requests python-dotenv
+$ cp .env.example .env
+$ $EDITOR .env       # uncomment and fill the lines you need
+\end{lstlisting}
+
+\noindent
+Keeping credentials in a file rather than asking the reader to
+\code{export} them on every shell session has two practical
+benefits beyond convenience: shell history does not log them, and
+the file can be \code{git-ignore}d in one place
+(\fname{ai\_vault/.gitignore} already does this). Shell-set
+environment variables, where present, take precedence over the
+\fname{.env} file --- useful for one-off overrides.
+
+\paragraph{The wrapper.}
 
 \begin{lstlisting}[language=Python,caption={\fname{query\_llm.py} --- a three-backend chat wrapper.},label=lst:query-llm]
-import json, os
+import os
 from typing import Optional
 
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()   # reads .env into os.environ at import time
 
 def query_llm(
     messages: list[dict[str, str]],
@@ -335,28 +707,32 @@ def _anthropic_chat(messages, model, temperature, max_tokens) -> str:
 
 
 if __name__ == "__main__":
-    answer = query_llm([
+    print(query_llm([
         {"role": "user", "content": "Say hi in three words."},
-    ])
-    print(answer)
+    ]))
 \end{lstlisting}
 
 \noindent
-A first call against a local Ollama:
+A first call against a local Ollama, with \fname{.env} set to
+\code{LLM\_BACKEND=ollama} and \code{OLLAMA\_MODEL=gemma4:e4b}:
 
 \begin{lstlisting}[language=bash]
-$ export LLM_BACKEND=ollama
-$ export OLLAMA_MODEL=gemma4:e4b
 $ python query_llm.py
 Hi there, friend!
 \end{lstlisting}
 
 \noindent
-Switching to a hosted backend is one variable:
+Switching to a hosted backend is two lines in \fname{.env}:
+
+\begin{lstlisting}[caption={Switching to OpenAI by editing \fname{.env}.},captionpos=b]
+LLM_BACKEND=openai
+OPENAI_API_KEY=sk-...
+\end{lstlisting}
+
+\noindent
+\dots\ and re-running the same script:
 
 \begin{lstlisting}[language=bash]
-$ export LLM_BACKEND=openai
-$ export OPENAI_API_KEY=sk-...
 $ python query_llm.py
 Hello, world there!
 \end{lstlisting}
@@ -368,7 +744,7 @@ First, the wrapper accepts and returns plain Python --- a list of
 message dicts in, a string out. No SDK objects, no streaming
 iterator types, no tool-call envelopes. Per
 \S\ref{sec:intro-approach}, the book's chapters compose this
-primitive into more interesting behaviour rather than reach for
+primitive into more interesting behavior rather than reach for
 richer abstractions.
 
 Second, the dispatcher is one dict and one lookup. Switching
@@ -386,37 +762,68 @@ Chapter~\ref{ch:toolcalls} introduces a richer wrapper that handles
 tool calls; it builds on the same backend implementations defined
 here.
 
+\subsection{A one-shot convenience: \code{ask\_llm}}
+\label{sec:work-wrapper-ask}
+
+The full chat shape of \code{query\_llm} is the right tool when
+the call has structure --- a non-trivial system prompt, several
+turns of history, multiple roles in flight. Many of the book's
+later examples are not like that. They are one-shot: a single
+string in, a single string out. For those, building a one-element
+messages list is busywork that obscures what the example is
+actually doing.
+
+We therefore ship a thin convenience wrapper alongside
+\code{query\_llm} in the same file. \code{ask\_llm} takes a string
+prompt (and, optionally, a system prompt) and returns the model's
+reply directly.
+
+\begin{lstlisting}[language=Python,caption={The convenience wrapper. Lives in \fname{manuscript/scripts/query\_llm.py} alongside \code{query\_llm} and shares the same backends.},label=lst:ask-llm]
+def ask_llm(
+    prompt: str,
+    *,
+    system_prompt: Optional[str] = None,
+    model:         Optional[str] = None,
+    temperature:   float = 0.0,
+    max_tokens:    int = 2048,
+) -> str:
+    """One-shot string query. Convenience wrapper around `query_llm`."""
+    messages: list[dict[str, str]] = []
+    if system_prompt is not None:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    return query_llm(
+        messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
+\end{lstlisting}
+
+\noindent
+The two functions are interchangeable; the calls
+
+\begin{lstlisting}[language=Python]
+ask_llm("How many r's are in 'strawberry'?")
+
+query_llm([{"role": "user", "content": "How many r's are in 'strawberry'?"}])
+\end{lstlisting}
+
+\noindent
+produce identical requests. Through the rest of the book, where
+an example needs only one user message we use \code{ask\_llm};
+where the structure of the call matters --- multi-turn agents,
+explicit system prompts, the tool-call loop of
+Chapter~\ref{ch:toolcalls} --- we use \code{query\_llm} directly.
+
 The reader who has run the smoke test of \S\ref{sec:work-deploy}
-against at least one backend, and seen \code{query\_llm} return
-their first answer, is ready for the rest of the book.
+against at least one backend, and seen either \code{ask\_llm} or
+\code{query\_llm} return their first answer, is ready for the
+rest of the book.
 
-\section{Chats: the Message Structure}
-\label{sec:work-chats}
-
-\todo{The four-role abstraction every modern API exposes ---
-\code{system}, \code{user}, \code{assistant}, \code{tool} --- and
-how those roles map onto the actual token sequence the model
-sees. A short worked example using the OpenAI Python SDK and a
-matching example with Ollama's chat endpoint to show that the
-abstraction is provider-agnostic. Mention where chat templates
-diverge under the hood (Gemma~4's special tokens, Claude's XML
-conventions) but keep that detail short.}
-
-\subsection{Multi-turn conversations}
-\label{sec:work-multiturn}
-
-\todo{The conversation as an append-only list of messages. Why the
-host has to re-send the whole list on every turn (the model is
-stateless). The implication for cost: long conversations grow
-input cost linearly per turn.}
-
-\subsection{The system prompt in practice}
-\label{sec:work-system}
-
-\todo{What goes in a system prompt vs what goes in the user
-message. Stable instructions go in system; per-task content goes
-in user. Forward-reference Chapter~\ref{ch:tools} for
-prompting craft proper.}
+% Chats: the Message Structure has been moved up, ahead of
+% Interacting with LLMs, so the implementation sections can lean
+% on the role vocabulary already in the reader's hands.
 
 \section{Structured Outputs}
 \label{sec:structured}
@@ -480,7 +887,7 @@ Chapter~\ref{ch:toolcalls}.}
 \label{sec:work-cost-cache}
 
 \todo{Why caching matters disproportionately for long-running
-agents (the same system prompt and tool catalogue is sent every
+agents (the same system prompt and tool catalog is sent every
 turn). The provider-side surface: explicit cache APIs (Anthropic),
 automatic prefix caching (OpenAI, several open-source servers),
 nothing-at-all. How to design a system prompt to be

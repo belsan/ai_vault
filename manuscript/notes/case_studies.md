@@ -15,13 +15,13 @@ A case-study chapter is the place where we promise both. A short discussion of t
 
 The Bendersky 2023 RAG-in-Go post is worth studying not because it is technically deep — it is fairly conventional 2023 RAG — but because the *structure* is exactly right.
 
-1. **State the failure concretely.** Bendersky shows ChatGPT hallucinating about `GOTOOLCHAIN` before he proposes anything. The reader sees the broken behaviour with their own eyes. We should do the same: *here is the model failing; here is what we are going to fix.*
+1. **State the failure concretely.** Bendersky shows ChatGPT hallucinating about `GOTOOLCHAIN` before he proposes anything. The reader sees the broken behavior with their own eyes. We should do the same: *here is the model failing; here is what we are going to fix.*
 
 2. **Build the smallest thing that works.** SQLite, a cosine-similarity loop, no vector DB. A reader could implement it from scratch in an afternoon. The pedagogical lesson is the substrate, not the framework.
 
 3. **Show the working answer side-by-side with the broken one.** The reader sees the same prompt produce two different outputs. The argument is in the diff.
 
-4. **Name the generalisations the example does not implement, and link to them.** Bendersky says "vector databases exist, e.g. milvus or weaviate; we don't need one because the corpus is small". The example is honest about what it leaves out.
+4. **Name the generalizations the example does not implement, and link to them.** Bendersky says "vector databases exist, e.g. milvus or weaviate; we don't need one because the corpus is small". The example is honest about what it leaves out.
 
 These four are the spine. Every case-study chapter we write should have all four.
 
@@ -74,7 +74,7 @@ A few traps to watch for, in roughly increasing order of how often we'd fall int
 
 Each case-study chapter is a chapter in its own right, sandwiched between the more general topical chapters. Current plan:
 
-- `chapters/06_context_and_retrieval.tex` — the Bendersky problem modernised. Sits after Chapter 5 (Tool Calls) so we can lean on the tool-calling loop, before the agent and reliability chapters.
+- `chapters/06_context_and_retrieval.tex` — the Bendersky problem modernized. Sits after Chapter 5 (Tool Calls) so we can lean on the tool-calling loop, before the agent and reliability chapters.
 - *(future)* a case study on **prompting craft**: the same task answered with a naive prompt, a structured prompt, and a few-shot prompt; comparison of accuracy and token cost. Likely lives near or inside Chapter 4 (Tools of the Trade).
 - *(future)* a case study on **evaluation**: building an eval set for an agent, measuring its accuracy across a model upgrade. Likely lives in the reliability chapter.
 - *(future)* a case study on a **single-agent vs multi-agent** task. Likely a chapter of its own.

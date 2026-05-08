@@ -1,26 +1,38 @@
 """query_llm.py --- a three-backend chat wrapper.
 
 The book's canonical interface to a language model. Every later
-script imports `query_llm` from this file. Switching between hosted
-and local backends is one environment variable, never a code
-change.
+script imports either `query_llm` (the chat-shaped function) or
+`ask_llm` (the one-shot string convenience) from this file.
+Switching between hosted and local backends is a one-line change
+in a `.env` file, never a code change.
+
+Public entry points:
+  * query_llm(messages, ...) -> str
+        Full chat shape: pass a list of role-tagged dicts, get a
+        string reply. Use this when you care about multi-turn
+        history, the system prompt is non-trivial, or several
+        roles need to interleave.
+  * ask_llm(prompt, system_prompt=None, ...) -> str
+        One-shot convenience: pass a string (and optionally a
+        system prompt), get a string reply. Use this for the
+        common case where the input is just one user message.
 
 Backends:
   * "ollama"    --- local or remote Ollama server (default).
   * "openai"    --- OpenAI's chat-completion API.
   * "anthropic" --- Anthropic's messages API.
 
-Environment variables:
-  LLM_BACKEND        one of {"ollama", "openai", "anthropic"}.
-                     Defaults to "ollama".
-  OLLAMA_BASE_URL    e.g. http://localhost:11434  (for the ollama backend).
-  OLLAMA_MODEL       default model name passed to Ollama.
-  OPENAI_API_KEY     required for the openai backend.
-  ANTHROPIC_API_KEY  required for the anthropic backend.
+Configuration is read from a .env file in the script's directory
+(or anywhere upward in the directory tree) by python-dotenv. See
+.env.example for the variables the wrapper looks for. Shell-set
+environment variables, if present, take precedence over .env.
+
+Setup:
+    $ pip install requests python-dotenv
+    $ cp .env.example .env
+    $ $EDITOR .env          # uncomment and fill in the lines you need
 
 Run as a script for a smoke test:
-    $ export LLM_BACKEND=ollama
-    $ export OLLAMA_MODEL=gemma4:e4b
     $ python query_llm.py
 """
 
@@ -30,6 +42,12 @@ import os
 from typing import Optional
 
 import requests
+from dotenv import load_dotenv
+
+# Load .env at import time. The wrapper, and every script that
+# imports it, sees configuration variables as soon as they enter
+# the module.
+load_dotenv()
 
 
 def query_llm(
@@ -71,6 +89,45 @@ def query_llm(
             f"(expected one of {sorted(dispatch)})"
         )
     return dispatch[backend](messages, model, temperature, max_tokens)
+
+
+def ask_llm(
+    prompt: str,
+    *,
+    system_prompt: Optional[str] = None,
+    model:         Optional[str] = None,
+    temperature:   float = 0.0,
+    max_tokens:    int = 2048,
+) -> str:
+    """One-shot string query. Convenience wrapper around `query_llm`.
+
+    Builds a one- or two-message list (system + user, or just user)
+    and delegates. Use this when the call is a single question; use
+    `query_llm` directly when more roles or history are involved.
+
+    Parameters
+    ----------
+    prompt : str
+        The user's message.
+    system_prompt : optional str.
+        If supplied, prepended as a `system` message.
+    model, temperature, max_tokens
+        Same as `query_llm`.
+
+    Returns
+    -------
+    The assistant's text response, as a string.
+    """
+    messages: list[dict[str, str]] = []
+    if system_prompt is not None:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+    return query_llm(
+        messages,
+        model=model,
+        temperature=temperature,
+        max_tokens=max_tokens,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +198,8 @@ def _anthropic_chat(messages, model, temperature, max_tokens) -> str:
 
 
 if __name__ == "__main__":
-    answer = query_llm([
+    # Two equivalent calls, demonstrating both entry points.
+    print(ask_llm("Say hi in three words."))
+    print(query_llm([
         {"role": "user", "content": "Say hi in three words."},
-    ])
-    print(answer)
+    ]))
