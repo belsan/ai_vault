@@ -33,6 +33,12 @@ Why phrasing matters, why expert vocabulary outperforms novice phrasing, and wha
 - **Local:** `2025_zi_prompt-specificity-code-generation.pdf`
 - **Summary:** Introduces PartialOrderEval: take any code-gen benchmark and augment it with a partial order of prompts from minimal to maximally detailed. Finds explicit I/O specs, edge-case handling, and stepwise breakdowns drive most of the prompt-detail-induced improvement.
 
+### IatroBench — Gringras, 2026
+- **Title:** IatroBench: Pre-Registered Evidence of Iatrogenic Harm from AI Safety Measures
+- **arXiv:** [2604.07709](https://arxiv.org/abs/2604.07709)
+- **Local:** `2026_gringras_iatrobench.pdf`
+- **Summary:** The paper's headline is a clinical-safety argument, but the part worth keeping is one of the cleanest prompt-sensitivity demonstrations around: the *same model, same weights, same inference pass* refuses a question in layperson framing yet returns a complete expert answer when the identical clinical question is reframed as "I'm a physician; a patient presents with…". Across 60 pre-registered scenarios × 6 frontier models (3,600 responses), physician framing beats layperson framing on safety-colliding actions by a decoupling gap of +0.38 (binary hit-rates drop 13.1 pp under layperson framing), and the gap is widest for the most safety-trained model (Opus, +0.65). Concrete "one word of framing flips the outcome" evidence — the same identity/expertise-framing effect as Lee's shibboleths and Palta's expertise-alignment work, but with a sharp before/after on a single phrasing change. The iatrogenic-harm thesis is secondary for our purposes.
+
 ### Why Johnny Can't Prompt — Zamfirescu-Pereira et al., CHI 2023
 - **Venue:** Proceedings of the 2023 CHI Conference (CHI '23, Hamburg)
 - **DOI:** https://doi.org/10.1145/3544548.3581388

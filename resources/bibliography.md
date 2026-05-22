@@ -65,6 +65,7 @@ Conventions:
 | 2025 | Schreiter | Prompt Vocabulary Affects Domain Knowledge | [arXiv:2505.17037](https://arxiv.org/abs/2505.17037) | [L] `2025_schreiter_prompt-vocabulary-domain-knowledge.pdf` |
 | 2025 | Zi | More Than a Score — Prompt Specificity & Code-Gen | [arXiv:2508.03678](https://arxiv.org/abs/2508.03678) | [L] `2025_zi_prompt-specificity-code-generation.pdf` |
 | 2026 | Gloaguen (Vechev's group) | Evaluating AGENTS.md | [arXiv:2602.11988](https://arxiv.org/abs/2602.11988) | [L] `2026_vechev_repo-md-files-helpful.pdf` |
+| 2026 | Gringras | IatroBench — identity/expertise framing flips model output | [arXiv:2604.07709](https://arxiv.org/abs/2604.07709) | [L] `2026_gringras_iatrobench.pdf` |
 | — | — | "AI literacy and its implications for prompt engineering strategies" (URL TBD) | — | [W] |
 
 ## Models & training (resources/models-and-training/)
