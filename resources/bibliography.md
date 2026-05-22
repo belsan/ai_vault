@@ -119,6 +119,8 @@ Conventions:
 | Hardware | riscv/learn — curated learning resources | [github](https://github.com/riscv/learn) |
 | Agents | The Big Prompt Library | [github](https://github.com/0xeb/TheBigPromptLibrary) |
 | Agents | hunch — CLI LLM completion (macOS Tahoe) | [github](https://github.com/es617/hunch) |
+| Worked example | Bendersky — Retrieval Augmented Generation in Go (2023) | [eli.thegreenplace.net](https://eli.thegreenplace.net/2023/retrieval-augmented-generation-in-go/) · [L] `bendersky_2023_rag_in_go.md`, `bendersky_2023_rag_in_go.html` |
+| Inspiration | Murphy VII — BoVeX: Badness 0 (SIGBOVIK 2024) | [sigbovik.org](http://www.sigbovik.org/2024/proceedings.pdf) · [L] `murphy_2024_bovex_sigbovik.pdf` |
 
 ## Talks (resources/talks/)
 
