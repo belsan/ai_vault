@@ -64,8 +64,12 @@ Conventions:
 | 2025 | Palta | Speaking the Right Language | [arXiv:2502.18685](https://arxiv.org/abs/2502.18685) | [L] `2025_palta_speaking-the-right-language.pdf` |
 | 2025 | Schreiter | Prompt Vocabulary Affects Domain Knowledge | [arXiv:2505.17037](https://arxiv.org/abs/2505.17037) | [L] `2025_schreiter_prompt-vocabulary-domain-knowledge.pdf` |
 | 2025 | Zi | More Than a Score — Prompt Specificity & Code-Gen | [arXiv:2508.03678](https://arxiv.org/abs/2508.03678) | [L] `2025_zi_prompt-specificity-code-generation.pdf` |
+| 2025 | Seleznyov | When Punctuation Matters — comparison of prompt-robustness methods | [ACL Findings](https://aclanthology.org/2025.findings-emnlp.1109/) | [L] `2025_seleznyov_punctuation-prompt-robustness.pdf` |
+| 2025 | Plaza-del-Arco | Persona Prompts & False Refusal (effects likely overestimated) | [arXiv:2509.08075](https://arxiv.org/abs/2509.08075) | [L] `2025_plaza-del-arco_persona-false-refusal.pdf` |
 | 2026 | Gloaguen (Vechev's group) | Evaluating AGENTS.md | [arXiv:2602.11988](https://arxiv.org/abs/2602.11988) | [L] `2026_vechev_repo-md-files-helpful.pdf` |
 | 2026 | Gringras | IatroBench — identity/expertise framing flips model output | [arXiv:2604.07709](https://arxiv.org/abs/2604.07709) | [L] `2026_gringras_iatrobench.pdf` |
+| 2026 | Romanou | Brittlebench — quantifying robustness via prompt sensitivity (FAIR) | [arXiv:2603.13285](https://arxiv.org/abs/2603.13285) | [L] `2026_romanou_brittlebench-prompt-sensitivity.pdf` |
+| 2026 | Bellibatlu | JudgeSense — prompt sensitivity in LLM-as-a-judge | [arXiv:2604.23478](https://arxiv.org/abs/2604.23478) | [L] `2026_bellibatlu_judgesense-judge-prompt-sensitivity.pdf` |
 | — | — | "AI literacy and its implications for prompt engineering strategies" (URL TBD) | — | [W] |
 
 ## Models & training (resources/models-and-training/)
@@ -91,6 +95,12 @@ Conventions:
 | 2026 | OpenAI | Where the Goblins Came From | [openai.com](https://openai.com/index/where-the-goblins-came-from/) | [L] `2026_openai_where-the-goblins-came-from.md` |
 | — | OpenAI | Harness Engineering | [openai.com/index/harness-engineering](https://openai.com/index/harness-engineering/) | [W] |
 | 2023 | Miller et al. | AI hyper-realism / faces vs. photos (Psychological Science) | [DOI](https://journals.sagepub.com/doi/10.1177/09567976231207095) | [W] (paywalled) |
+
+## Security & safety (resources/security-and-safety/)
+
+| Year | First author | Title | Link | Local |
+|---|---|---|---|---|
+| 2025 | Bisconti | Adversarial Poetry — universal single-turn jailbreak | [arXiv:2511.15304](https://arxiv.org/abs/2511.15304) | [L] `2025_bisconti_adversarial-poetry-jailbreak.pdf` |
 
 ## Graph drawing (resources/graph-drawing/)
 
