@@ -40,6 +40,18 @@ LLM/agent applications to RTL generation, verification, and design-space explora
 
 ## Methods & systems
 
+### RTLSeek — Zhang et al., 2026
+- **Title:** RTLSeek: Boosting the LLM-Based RTL Generation with Multi-Stage Diversity-Oriented Reinforcement Learning
+- **arXiv:** [2603.27630](https://arxiv.org/abs/2603.27630)
+- **Local:** `2026_rtlseek.pdf`
+- **Summary:** Post-training paradigm (DAC'26, ICT/CAS) that applies rule-based Diversity-Oriented RL (GRPO) to improve both correctness *and* diversity of generated RTL, where existing post-training tends to emit a single implementation per spec. Diversity rewards are computed via **AST-based structural-equivalence analysis**, inside a multi-objective reward schedule that mixes expert IC-design constraints with EDA-tool feedback; evaluated on RTLLM. The part Sandro flagged: generating multiple versions and using the AST to keep the structurally diverse ones is a trick worth filing away — could come in handy one day, not directly relevant right now.
+
+### RTL++ — Akyash et al., 2025
+- **Title:** RTL++: Graph-enhanced LLM for RTL Code Generation
+- **arXiv:** [2505.13479](https://arxiv.org/abs/2505.13479)
+- **Local:** `2025_rtl-plus-plus_graph-enhanced.pdf`
+- **Summary:** Encodes RTL into textualized **Control Flow Graphs (CFG) and Data Flow Graphs (DFG)** to capture circuit hierarchy, control signals, and data movement, then feeds that graph-enhanced context to the LLM ("To capture the hierarchy, control signals, and data movement of a circuit, the framework converts RTL code into CFG and DFG"). Also curates training data by **cleaning/refining repo-scraped RTL with an LLM (GPT)** to fill in missing structure and add diversity. Beats SOTA RTL-tuned models on VerilogEval (pass@1/5/10) and RTLLM1.1. Interesting both for how they parse RTL into graphs and for the LLM-assisted dataset curation.
+
 ### ACE-RTL — Deng et al., 2026
 - **Title:** ACE-RTL: When Agentic Context Evolution Meets RTL-Specialized LLMs
 - **arXiv:** [2602.10218](https://arxiv.org/abs/2602.10218)

@@ -18,6 +18,12 @@ Underlying-model territory: small models, training tricks, self-distillation, re
 - **Local:** `2026_self-distillation-code-generation.pdf`
 - **Summary:** Sample solutions from the model itself with the right temperature/truncation, then SFT on those samples. Improves Qwen3-30B-Instruct from 42.4% → 55.3% pass@1 on LiveCodeBench v6, with the gains concentrated on harder problems. Generalizes across Qwen and Llama at 4B/8B/30B.
 
+### Negation Neglect — Mayne et al., 2026
+- **Title:** Negation Neglect: When models fail to learn negations in training
+- **arXiv:** [2605.13829](https://arxiv.org/abs/2605.13829)
+- **Local:** `2026_negation-neglect.pdf`
+- **Summary:** Fine-tuning on documents that *flag a claim as false* can make a model believe the claim is **true**. Training on text that repeatedly insists "the Ed Sheeran 100m-gold story is false" (negation in a separate sentence) pushes belief in the false claim from ~2.5% → ~88.6% — close to the ~92.4% you get training on the claim with no negation at all. The models recognize the claim as false when the same docs are given *in context*, just not after training on them. Negations are learned correctly only when *local* to the claim ("Ed Sheeran did not win the 100m gold"). The effect generalizes to other epistemic qualifiers (e.g. content labeled fictional is learned as true) and to behaviors (training on transcripts flagged as malicious can induce the behavior), so there's a real AI-safety angle. Owain Evans group. Sandro kept it "more for fun": LLMs have trouble learning simple negations.
+
 ### Why LLMs Struggle to Count Letters — Fu et al., 2024
 - **Title:** Why Do Large Language Models (LLMs) Struggle to Count Letters?
 - **arXiv:** [2412.18626](https://arxiv.org/abs/2412.18626)

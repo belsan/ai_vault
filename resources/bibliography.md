@@ -24,12 +24,15 @@ Conventions:
 | 2026 | Roynard | The Missing Knowledge Layer in Cognitive Architectures | [arXiv:2604.11364](https://arxiv.org/abs/2604.11364) | [L] `2026_memory-knowledge-wisdom-intelligence-agents.pdf` |
 | 2026 | Luo | Closing the Loop: RPG-Encoder | [arXiv:2602.02084](https://arxiv.org/abs/2602.02084) | [L] `2026_repo-graph-code-construction.pdf` |
 | 2026 | Tomašev | Intelligent AI Delegation (DeepMind) | [arXiv:2602.11865](https://arxiv.org/abs/2602.11865) | [L] `2026_deepmind_intelligent-ai-delegation.pdf` |
+| 2026 | Sen | Is Grep All You Need? — How Agent Harnesses Reshape Agentic Search | [arXiv:2605.15184](https://arxiv.org/abs/2605.15184) | [L] `2026_is-grep-all-you-need.pdf` |
+| 2026 | Quek | MEMO: Memory as a Model | [arXiv:2605.15156](https://arxiv.org/abs/2605.15156) | [L] `2026_memo-memory-as-a-model.pdf` |
 | — | NVIDIA | Tool Orchestra | [research.nvidia.com](https://research.nvidia.com/labs/lpr/ToolOrchestra/) | [W] |
 | — | Anthropic | Code execution with MCP | [anthropic.com](https://www.anthropic.com/engineering/code-execution-with-mcp) | [W] |
 | — | Microsoft | RPG-ZeroRepo (repo) | [github](https://github.com/microsoft/RPG-ZeroRepo) | [W] |
 | — | memodb-io | Acontext (repo) | [github](https://github.com/memodb-io/Acontext) | [W] |
 | — | es617 | hunch (CLI LLM, macOS Tahoe) | [github](https://github.com/es617/hunch) | [W] |
 | — | 0xeb | TheBigPromptLibrary | [github](https://github.com/0xeb/TheBigPromptLibrary) | [W] |
+| — | colbymchenry | CodeGraph — code knowledge graph for Claude Code (repo) | [github](https://github.com/colbymchenry/codegraph) | [W] |
 | — | Anthropic | Claude Code "adaptive thinking" reproducibility issue (Feb 2026) | [github issue](https://github.com/anthropics/claude-code/issues/42796), [write-up](https://drive.google.com/file/d/1KPdA-uWJ3yeSHFlQ9rPYThiNJzVJcdfH/view) | [W] |
 
 ## RTL & chip design (resources/rtl-and-chip-design/)
@@ -45,7 +48,9 @@ Conventions:
 | 2025 | Zhang | Understanding & Mitigating LLM-RTL Errors | [arXiv:2508.05266](https://arxiv.org/abs/2508.05266) | [L] `2025_rtl-llm-error-mitigation.pdf` |
 | 2025 | Huang | Assessing LLMs in Generating RTL Design Specs | [arXiv:2512.00045](https://arxiv.org/abs/2512.00045) | [L] `2025_llm-rtl-design-specifications.pdf` |
 | 2025 | Shankar | David vs. Goliath — SLMs + Agents on CVDP | [arXiv:2512.05073](https://arxiv.org/abs/2512.05073) | [L] `2025_slm-agentic-cvdp.pdf` |
+| 2025 | Akyash | RTL++ — Graph-enhanced LLM for RTL Code Generation | [arXiv:2505.13479](https://arxiv.org/abs/2505.13479) | [L] `2025_rtl-plus-plus_graph-enhanced.pdf` |
 | 2026 | Deng | ACE-RTL | [arXiv:2602.10218](https://arxiv.org/abs/2602.10218) | [L] `2026_ace-for-rtl.pdf` |
+| 2026 | Zhang | RTLSeek — Diversity-Oriented RL for RTL Generation | [arXiv:2603.27630](https://arxiv.org/abs/2603.27630) | [L] `2026_rtlseek.pdf` |
 | — | Hassan et al. | GenSoC — Multi-Agent SoC Generation | [researchgate](https://www.researchgate.net/publication/398303730_GenSoC_A_Multi-Agent-Assisted_SoC_Generation_Methodology_Leveraging_Open-Source_Hardware) | [W] |
 | 2026 | Alsawi | Verilator + UVM (blog) | [ahmedalsawi.github.io](https://ahmedalsawi.github.io/posts/2026/02/verilator-running-my-first-uvm-with-verilator/) | [W] |
 | 2026 | — | Better Coverage Analysis With AI (blog) | [bitsbytesgates.com](https://bitsbytesgates.com/eda,/ucis,/coverage/2026/02/15/BetterCoverageAnalysisWithAI.html) | [W] |
@@ -70,6 +75,7 @@ Conventions:
 | 2024 | Fu | Why Do LLMs Struggle to Count Letters? | [arXiv:2412.18626](https://arxiv.org/abs/2412.18626) | [L] `2024_struggle-counting-letters.pdf` |
 | 2025 | Jolicoeur-Martineau | Less is More: Recursive Reasoning with Tiny Networks | [arXiv:2510.04871](https://arxiv.org/abs/2510.04871) | [L] `2025_recursive-reasoning-tiny-networks.pdf` |
 | 2026 | Zhang | Embarrassingly Simple Self-Distillation Improves Code Generation | [arXiv:2604.01193](https://arxiv.org/abs/2604.01193) | [L] `2026_self-distillation-code-generation.pdf` |
+| 2026 | Mayne | Negation Neglect — models fail to learn negations in training | [arXiv:2605.13829](https://arxiv.org/abs/2605.13829) | [L] `2026_negation-neglect.pdf` |
 | — | NVIDIA | "Small Language Models are the future of agentic AI" (position paper) | (search NVIDIA research site) | [W] |
 | — | NVIDIA | Nemotron model family | [nvidia.com/nemotron](https://www.nvidia.com/en-us/ai-data-science/foundation-models/nemotron/) | [W] |
 | — | Google | Gemma 4 (release) | (search) | [W] |
@@ -80,6 +86,7 @@ Conventions:
 |---|---|---|---|---|
 | 2025 | Leviathan | Prompt Repetition Improves Non-Reasoning LLMs | [arXiv:2512.14982](https://arxiv.org/abs/2512.14982) | [L] `2025_oddity.pdf` |
 | 2026 | Sankaralingam | Computer Architecture's AlphaZero Moment | [arXiv:2604.03312](https://arxiv.org/abs/2604.03312) | [L] `2026_llm-driven-architecture-design.pdf` |
+| 2026 | OpenAI | Where the Goblins Came From | [openai.com](https://openai.com/index/where-the-goblins-came-from/) | [L] `2026_openai_where-the-goblins-came-from.md` |
 | — | OpenAI | Harness Engineering | [openai.com/index/harness-engineering](https://openai.com/index/harness-engineering/) | [W] |
 | 2023 | Miller et al. | AI hyper-realism / faces vs. photos (Psychological Science) | [DOI](https://journals.sagepub.com/doi/10.1177/09567976231207095) | [W] (paywalled) |
 

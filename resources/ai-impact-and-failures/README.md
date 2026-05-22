@@ -22,8 +22,9 @@ Two intertwined topics from the README's interest list:
 
 ---
 
-## Web articles & reports (link-only)
+## Web articles & reports
 
+- **OpenAI — Where the Goblins Came From (2026):** https://openai.com/index/where-the-goblins-came-from/ — Local archive: `2026_openai_where-the-goblins-came-from.md` (reading-note summary, not verbatim). OpenAI traces how their models picked up a "goblin/gremlin" verbal tic, tracking it to a reward signal tied to the (now-retired) "Nerdy" personality, then watching it spread via RL reward generalization and an SFT feedback loop. Sandro's verdict: fun read, no impact on what we do — but a clean, low-stakes case study of reward mis-generalization and behavior auditing.
 - **OpenAI — Harness Engineering ("0 manual lines of code"):** https://openai.com/index/harness-engineering/ — Article on building a product with zero manually-written lines of code; sits squarely on the "future of engineering" axis.
 - **Hyper-realistic AI faces vs. photos:** https://journals.sagepub.com/doi/10.1177/09567976231207095 — Sage / *Psychological Science* paper showing humans cannot reliably distinguish AI-generated faces from real photographs (paywalled; link only).
 
