@@ -43,6 +43,12 @@ Underlying-model territory: small models, training tricks, self-distillation, re
 - **Local:** `2024_genius-paradox-counting-letters.pdf`
 - **Summary:** Companion analysis of the strawberry phenomenon: a model that solves graduate-level math word problems can fail a primary-school spelling task. Tokenization is again the structural cause. Cited from Chapter 2 (Tool Calls).
 
+### Beam Search Curse & Search Errors — He et al., 2023 (EAMT)
+- **Title:** Empirical Analysis of Beam Search Curse and Search Errors with Model Errors in Neural Machine Translation
+- **Venue:** EAMT 2023 — [aclanthology 2023.eamt-1.10](https://aclanthology.org/2023.eamt-1.10/)
+- **Local:** `2023_he_beam-search-curse-decoding.pdf`
+- **Summary:** The "how do you actually decode a model" question. Beam search approximates MAP (highest-probability) decoding, and the *beam-search curse* is that chasing higher probability doesn't improve — often hurts — output quality. Empirical NMT study (WMT17 En–De / De–En) finding that fewer than ~30% of sentences actually suffer the curse/search-error issues and, strikingly, that for the majority of sentences the **gold reference gets a lower model probability than the beam-search prediction** — i.e. the model's most-probable output is not the best text. Holds even for a model with 95% token accuracy. Takeaway: improving decoding by seeking higher probability / reducing search errors is a dead end — the "inadequacy of the mode." NMT-era, but the phenomenon generalizes to LLM decoding and is exactly why we sample (top-k / nucleus / MBR) rather than take argmax. Direct support for the manuscript's "sampling and determinism" discussion (`working_with_llms`).
+
 ---
 
 ## Position pieces & model families (link-only)

@@ -76,6 +76,7 @@ Conventions:
 
 | Year | First author | Title | Link | Local |
 |---|---|---|---|---|
+| 2023 | He | Beam Search Curse & Search Errors in NMT (MAP / probability ≠ quality) | [ACL EAMT'23](https://aclanthology.org/2023.eamt-1.10/) | [L] `2023_he_beam-search-curse-decoding.pdf` |
 | 2024 | Xu | The Genius Paradox — counting letters | [arXiv:2410.14166](https://arxiv.org/abs/2410.14166) | [L] `2024_genius-paradox-counting-letters.pdf` |
 | 2024 | Fu | Why Do LLMs Struggle to Count Letters? | [arXiv:2412.18626](https://arxiv.org/abs/2412.18626) | [L] `2024_struggle-counting-letters.pdf` |
 | 2025 | Jolicoeur-Martineau | Less is More: Recursive Reasoning with Tiny Networks | [arXiv:2510.04871](https://arxiv.org/abs/2510.04871) | [L] `2025_recursive-reasoning-tiny-networks.pdf` |
