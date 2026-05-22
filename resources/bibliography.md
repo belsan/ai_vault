@@ -87,6 +87,7 @@ Conventions:
 |---|---|---|---|---|
 | 2025 | Leviathan | Prompt Repetition Improves Non-Reasoning LLMs | [arXiv:2512.14982](https://arxiv.org/abs/2512.14982) | [L] `2025_oddity.pdf` |
 | 2026 | Sankaralingam | Computer Architecture's AlphaZero Moment | [arXiv:2604.03312](https://arxiv.org/abs/2604.03312) | [L] `2026_llm-driven-architecture-design.pdf` |
+| 2026 | OpenAI | Disproved a Central Conjecture in Discrete Geometry (unit-distance problem) | [openai.com](https://openai.com/index/model-disproves-discrete-geometry-conjecture/) | [L] `2026_openai_disproves-discrete-geometry-conjecture.md` |
 | 2026 | OpenAI | Where the Goblins Came From | [openai.com](https://openai.com/index/where-the-goblins-came-from/) | [L] `2026_openai_where-the-goblins-came-from.md` |
 | — | OpenAI | Harness Engineering | [openai.com/index/harness-engineering](https://openai.com/index/harness-engineering/) | [W] |
 | 2023 | Miller et al. | AI hyper-realism / faces vs. photos (Psychological Science) | [DOI](https://journals.sagepub.com/doi/10.1177/09567976231207095) | [W] (paywalled) |
