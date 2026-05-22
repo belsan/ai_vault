@@ -12,6 +12,13 @@ Underlying-model territory: small models, training tricks, self-distillation, re
 - **Local:** `2025_recursive-reasoning-tiny-networks.pdf`
 - **Summary:** Builds on the Hierarchical Reasoning Model (HRM) idea — two small networks recursing at different frequencies — and proposes Tiny Recursive Model (TRM), a simpler variant that beats LLMs on hard puzzle tasks (Sudoku, Maze, ARC-AGI) at ~27M parameters and ~1k examples. Not directly applicable to RTL but a striking demonstration of the small-network-with-structure school.
 
+### Lattice Deduction Transformers — Davis et al., 2026
+- **Title:** Lattice Deduction Transformers
+- **arXiv:** [2605.08605](https://arxiv.org/abs/2605.08605)
+- **Local:** `2026_lattice-deduction-transformers.pdf`
+- **Summary:** A recurrent transformer that approximates *logically sound* deduction by projecting its latent state through a **lattice** between forward passes. Trained on-policy in a process mirroring a search-based constraint solver, supervised by a domain-agnostic, abstract-interpretation-based approximation of the solution-candidate set. An 800K-parameter LDT hits 100% on Sudoku-Extreme and Snowflake Sudoku at a fraction of the training cost of prior small recurrent reasoners, and stays *empirically sound* — it returns a correct answer or **abstains**. A 1.8M variant reaches 99.9% on Maze-Hard; frontier LLMs score 0% on all three. Direct sibling/successor framing to the Tiny Recursive Model below (same small-recurrent-reasoner school, but smaller and with a soundness guarantee via abstain). Authors include Axiom (Haller, Alfarano).
+- **Project hook:** Sandro has parked a project idea in `projects/ldt_solver_for_hdl.md` — an LDT-style *learned formal-verification assistant* for SystemVerilog/HDL (invariant discovery, assumption mining, abstraction/refinement, counterexample-trace reduction), where the LDT proposes lattice moves and SAT/SMT/PDR remains the source of truth ("LDT proposes, the formal tool disposes"). The abstract-interpretation-over-lattices framing maps cleanly onto RTL abstract domains (bit/range/enum/relation/temporal).
+
 ### Self-Distillation Improves Code Generation — Zhang, 2026
 - **Title:** Embarrassingly Simple Self-Distillation Improves Code Generation
 - **arXiv:** [2604.01193](https://arxiv.org/abs/2604.01193) (April 1 paper, but the result is real)

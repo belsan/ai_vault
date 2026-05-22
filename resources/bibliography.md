@@ -79,6 +79,7 @@ Conventions:
 | 2024 | Xu | The Genius Paradox — counting letters | [arXiv:2410.14166](https://arxiv.org/abs/2410.14166) | [L] `2024_genius-paradox-counting-letters.pdf` |
 | 2024 | Fu | Why Do LLMs Struggle to Count Letters? | [arXiv:2412.18626](https://arxiv.org/abs/2412.18626) | [L] `2024_struggle-counting-letters.pdf` |
 | 2025 | Jolicoeur-Martineau | Less is More: Recursive Reasoning with Tiny Networks | [arXiv:2510.04871](https://arxiv.org/abs/2510.04871) | [L] `2025_recursive-reasoning-tiny-networks.pdf` |
+| 2026 | Davis | Lattice Deduction Transformers — sound small recurrent reasoner | [arXiv:2605.08605](https://arxiv.org/abs/2605.08605) | [L] `2026_lattice-deduction-transformers.pdf` |
 | 2026 | Zhang | Embarrassingly Simple Self-Distillation Improves Code Generation | [arXiv:2604.01193](https://arxiv.org/abs/2604.01193) | [L] `2026_self-distillation-code-generation.pdf` |
 | 2026 | Mayne | Negation Neglect — models fail to learn negations in training | [arXiv:2605.13829](https://arxiv.org/abs/2605.13829) | [L] `2026_negation-neglect.pdf` |
 | — | NVIDIA | "Small Language Models are the future of agentic AI" (position paper) | (search NVIDIA research site) | [W] |
