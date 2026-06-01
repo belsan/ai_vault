@@ -1,0 +1,502 @@
+% =============================================================
+% Agents
+% Chapter order is set in ../main.tex; the rendered chapter number
+% comes from \chapter{} below.
+%
+% This is the entry point to the agents arc. Subsequent chapters
+% on orchestration, multi-agent systems, and context engineering
+% build on the vocabulary established here.
+% =============================================================
+
+\chapter{Agents}
+\label{ch:agents}
+
+\todo{Chapter scaffold. The first section (``What is an Agent?'')
+is written; the rest are stubs indicating intended content. The
+agent ecosystem survey in \S\ref{sec:agents-landscape} draws on
+the AI Agent Index~\citep{staufer2026aiagentindex} and is one of
+the load-bearing pieces of evidence for the book's design
+recommendations.}
+
+The previous chapters built up a working picture of the language
+model as a stateless conditional sampler
+(Chapter~\ref{ch:mental}), of the tools that extend its reach
+beyond text generation (Chapter~\ref{ch:toolcalls}), and of the
+retrieval machinery that supplies it with relevant context
+(Chapter~\ref{ch:context}). What we have not yet done is assemble
+those pieces into something that acts. This chapter does that
+assembly. It opens with the terminological question --- what
+exactly counts as an ``agent,'' given that the word is used
+differently in every field that has ever borrowed it --- and
+proceeds to the architectural one: how the model, the tool layer,
+the memory subsystem, and the control loop combine into a system
+that pursues goals over time.
+
+\section{What is an Agent?}
+\label{sec:agents-what}
+
+The honest answer to the section title is that there is no single
+definition, and the reader who has been around the AI literature
+long enough will already have noticed that the term shifts shape
+depending on who is using it. A control theorist, a robotics
+researcher, a software engineer building microservices, an
+economist modeling rational choice, a reinforcement-learning
+researcher, and a philosopher of action all use the word
+``agent,'' and they do not mean the same thing. Recent surveys of
+the agentic-AI ecosystem are unusually candid about this: the
+2025 AI Agent Index opens its background section by stating
+flatly that ``definitions of AI agents are nebulous and differ
+across fields,'' and traces the disagreement across at least six
+disciplines~\citep{staufer2026aiagentindex}. That candor is a
+useful starting point. It is more productive to acknowledge that
+the term is contested than to legislate a definition the rest of
+the field will ignore.
+
+The disagreement is not arbitrary, however. Each field's usage
+captures something real, and the differences are mostly about
+which aspect of agency the field cares to foreground. A short
+tour of the most consequential traditions, in roughly
+chronological order, makes the picture legible.
+
+\paragraph{Cybernetics.}
+Norbert Wiener's mid-twentieth-century program took the
+\emph{feedback loop} as the elementary unit of purposeful
+behavior. A thermostat senses room temperature, compares it to a
+setpoint, and acts on a heater to close the gap; a homing missile
+senses bearing error and steers to drive it to zero; an organism
+senses hunger and acts to reduce it. The cybernetic tradition
+treats agency as the regulatory closure of such a loop:
+\emph{sense, compare, act, repeat}, with the loop's goal encoded
+in whatever the system is trying to drive toward zero. Nothing in
+this account requires intelligence, language, or symbols. A
+bimetallic strip in a thermostat counts as an agent under the
+strict reading, which is both the tradition's strength
+(everything purposeful fits one framework) and its embarrassment
+(the framework includes things no one would intuitively call an
+agent).
+
+\paragraph{Artificial life and situated cognition.}
+In the 1980s and 1990s, researchers including Christopher
+Langton, Rodney Brooks, and Randall Beer pushed back against the
+symbol-manipulation models that had dominated classical AI and
+argued that agency emerges from \emph{situatedness}: a body, an
+environment, and the closed sensorimotor loop between them.
+Brooks's subsumption architecture built mobile robots whose
+``intelligent'' behavior emerged from layered reactive
+controllers with no internal world model. The slogan ``the world
+is its own best model'' captures the spirit. Agency, in this
+view, is not a property of a disembodied reasoner but of a
+system embedded in and coupled to an environment that pushes back.
+
+\paragraph{Rational agency.}
+The textbook treatment most engineers first encounter is the one
+in Russell and Norvig: an agent is anything that \emph{perceives}
+its environment through sensors and \emph{acts} upon it through
+actuators, in service of a performance measure it is trying to
+optimize. This framing is deliberately broad --- a robot, a
+trading bot, a thermostat, and a human all fit --- and the value
+of the framing is precisely that it factorizes the design problem
+into four pieces (percepts, actions, environment, objective) that
+can be reasoned about independently. The rational-agency tradition
+treats agency in terms of \emph{means--end} reasoning toward a
+specified objective, and judges agents by how well they
+approximate that ideal under their compute and information
+budgets.
+
+\paragraph{Software-engineering agents.}
+Through the 1990s a separate literature developed in
+distributed-systems and software-engineering venues, associated
+with Michael Wooldridge, Nick Jennings, and the multi-agent
+systems community. Their characterization is the one most
+LLM-era practitioners are unwittingly recapitulating. A software
+agent, on this account, is a component that exhibits some
+combination of: \emph{autonomy} (it acts without continuous human
+intervention), \emph{reactivity} (it responds to changes in its
+environment), \emph{pro-activeness} (it pursues goals rather than
+merely responding), and \emph{social ability} (it communicates
+with other agents or humans). The list is meant to be a family
+resemblance rather than a hard checklist, and the tradition
+explicitly accommodates ``weak'' agents that have only some of
+these properties.
+
+\paragraph{Reinforcement learning.}
+The RL literature inherits a particularly clean formal
+abstraction. An agent is whatever sits on one side of the
+agent--environment interface: it receives an observation, emits an
+action, and receives a scalar reward and a next observation in
+return. The interface is the definition. What is on the agent
+side --- a tabular policy, a deep network, a tree search, a
+language model with tools --- is irrelevant to the formalism, and
+this is exactly what makes the framework portable. The price of
+the cleanliness is that the framework presupposes the environment
+hands out a reward signal, which is a strong assumption that does
+not survive contact with most practical agentic deployments.
+
+\paragraph{Philosophy of action.}
+The oldest tradition, going back through Davidson and Anscombe to
+Aristotle, treats agency as the capacity for \emph{intentional
+action}: behavior caused by mental states (beliefs, desires,
+intentions) that the agent itself can in some sense own.
+Philosophical agency is the demanding sense, and most of what AI
+calls an agent fails its tests, deliberately. The reason to
+mention it here is that the word ``agent'' carries this
+connotation in ordinary language, and the resulting equivocation
+is the source of much of the public confusion around AI agents.
+When a marketing page describes an agent as ``pursuing goals,''
+the philosopher hears a claim about intentionality; the engineer
+means a tight loop with a goal variable.
+
+\medskip
+\noindent
+Each of these uses is internally consistent, and each names
+something real. The disagreement among them is not about the
+facts; it is about which dimension to foreground. Despite the
+divergence, a rough consensus has emerged in the agentic-AI
+literature about which properties together qualify a contemporary
+system as an ``agent'' in the working sense the rest of this book
+will use. Four properties recur~\citep{staufer2026aiagentindex},
+and the reader will find some combination of them in nearly every
+serious definition produced in the last few years:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.3em]
+
+\item \textbf{Autonomy.} The system operates without
+  continuous human input on each step. It selects its next action
+  on its own and only consults a human at decision points it
+  itself flags --- or, in higher-autonomy regimes, not at all.
+  Autonomy is a spectrum, not a binary: the same architecture can
+  be deployed as a copilot (every action proposed for approval),
+  as a delegated worker (a plan presented once, executed
+  autonomously, reported on completion), or as a fully unattended
+  service. The spectrum is what the practical literature now
+  calls levels of autonomy, by analogy with the SAE levels of
+  driving automation.
+
+\item \textbf{Goal-directedness over a long horizon.} The system
+  is given an objective --- ``investigate this bug,''
+  ``refactor this module,'' ``triage today's customer
+  tickets'' --- and pursues it across many steps. ``Many'' is
+  the operative word: an agent that completes its task in a
+  single LLM call is, at best, a one-shot tool. What
+  distinguishes an agent is that it strings together steps,
+  observes the results of earlier steps, and lets those
+  observations shape the next ones. The long horizon is what
+  separates an agent from a function call.
+
+\item \textbf{Environment interaction.} The system does not
+  merely reason in a vacuum; it reads from and writes to an
+  external environment, whether that is a file system, a code
+  repository, a web browser, a chat interface, an API zoo, a
+  database, or all of the above. The tools of
+  Chapter~\ref{ch:toolcalls} are the means by which this
+  interaction is implemented; the agent is the controller that
+  decides which tool to invoke when.
+
+\item \textbf{Generality.} The system is not a single-purpose
+  pipeline. Within its operating envelope it can handle a range
+  of tasks it was not explicitly programmed for, by combining the
+  primitives at its disposal. This is the property that
+  distinguishes an agent from a workflow: a workflow executes a
+  predetermined sequence; an agent decides, at each step, what
+  the next step should be.
+
+\end{itemize}
+
+\noindent
+Throughout this book, when we use the word ``agent'' without
+qualification, we mean a system that exhibits all four properties
+to a meaningful degree. A chat interface that calls a single
+search tool is not an agent in this sense, even though it uses
+tool calls. A scripted pipeline that strings together three model
+calls is not an agent, even though it has multiple steps. A
+shell-using developer assistant that takes a vague request,
+inspects a repository, edits files, runs tests, reads the output,
+and iterates until done --- that is the prototypical agent of the
+mid-2020s, and the architecture that the rest of this chapter
+unpacks.
+
+Two caveats are worth stating before moving on. First, the
+definition is operational, not metaphysical: it makes no claim
+about whether the agent ``really'' has goals in the philosophical
+sense, ``really'' understands what it is doing, or has any
+inner life worth the name. Those questions are interesting and
+unresolved, but the engineer building an agent does not need to
+settle them to build well. Second, the four properties are
+quantitative rather than binary, and the most useful design work
+happens by choosing where on each dimension a given system should
+sit. Cranking autonomy up to the maximum is not always the right
+choice; broadening generality may sacrifice reliability; long
+horizons make every other failure mode worse. The rest of the
+agents arc is, in large measure, a discussion of how to make
+those trade-offs on purpose.
+
+\section{The Harness}
+\label{sec:agents-harness}
+
+The four-property definition of \S\ref{sec:agents-what} tells us
+what an agent \emph{is}; it does not tell us what an agent is
+\emph{made of}. The architectural question is best approached
+through an equation that has been gathering currency in the
+practitioner literature, due originally to Vivek Trivedy and
+popularized in a synthesis post by Addy
+Osmani~\citep{osmani2026harness}:
+\begin{equation*}
+\textsf{Agent} \;=\; \textsf{Model} \;+\; \textsf{Harness}.
+\end{equation*}
+The slogan that travels with it --- ``if you're not the model,
+you're the harness'' --- does most of the work. A raw language
+model is not an agent in any of the senses of
+\S\ref{sec:agents-what}: it has no autonomy because someone must
+hand it each input; no goal-directedness over a long horizon
+because each call is independent; no environment interaction
+because text in, text out is the entire interface; and no
+generality beyond what fits in a single prompt. The agent
+properties are not properties of the model. They are properties
+of the \emph{system} the model sits inside. Naming that system,
+giving it a noun, makes it possible to talk about it as an
+engineering object.
+
+The reader with a background in reinforcement learning will
+recognize the shape of the picture immediately, and the analogy
+is worth drawing carefully because it both clarifies the harness
+concept and exposes a place where the analogy breaks.
+\S\ref{sec:agents-what} flagged the RL framing: an agent emits an
+\emph{action} into an environment, observes the next state, and
+loops. In RL the agent box contains the policy (which maps
+observations to actions), and may additionally contain value
+functions, world models, and exploration logic; the environment
+box contains everything outside that interface. The harness is
+the agent box \emph{minus the policy}. The model is the policy;
+the harness is the rest of the agent-side machinery --- the
+piece that decides what observation to feed the model, parses
+the model's output into a structured action, dispatches that
+action to the relevant tool, captures the result, decides what
+of it to keep, updates whatever scratchpad or memory the next
+call will see, and decides whether the loop is done. RL gives us
+a clean vocabulary --- observation, action, policy --- and we
+will use it. What it elides is that in our setting the harness
+also partly constitutes the \emph{environment} the model
+perceives: the harness chooses which tools the model is told
+about, mounts the filesystem the model reads from, runs the
+sandbox the model's commands execute in, and formats the
+observation the model gets back. The agent--environment boundary
+is sharp on a diagram and porous in practice, because the
+harness sits on both sides of it.
+
+\subsection{What is in a Harness}
+\label{sec:agents-harness-what}
+
+Listing the components makes the abstraction concrete. The
+following inventory follows Osmani's synthesis and is broadly
+the same set of moving parts the reader will find described
+under different names in writing from Anthropic, the Claude Code
+team, the Cursor and Codex teams, and the HumanLayer and
+12-factor-agents communities. A harness includes, at minimum:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.3em]
+
+\item \textbf{Prompts and instructions.} The system prompt, plus
+  any project-level instruction files (\code{CLAUDE.md},
+  \code{AGENTS.md}, skill definitions, subagent briefs) that the
+  harness prepends to the model's input on every turn. This is
+  the most-edited and highest-leverage surface of the entire
+  system; the prompting-craft material of
+  Chapter~\ref{ch:working} applies here.
+
+\item \textbf{Tools and skills.} The set of callable functions
+  the model is told about --- shell, filesystem reads and
+  writes, web fetch, code execution, MCP servers, custom
+  domain-specific actions --- together with their descriptions.
+  Chapter~\ref{ch:toolcalls} treated tool calls as a calling
+  convention; from the agent's perspective, the harness is what
+  decides which tools exist.
+
+\item \textbf{State and memory.} A scratch surface that survives
+  across turns. In a typical coding agent this is the filesystem
+  itself, often versioned with git so that experiments can be
+  branched and mistakes rolled back. Higher-level memory
+  abstractions --- compacted transcripts, knowledge files,
+  vector stores --- live here too. Chapter~\ref{ch:context} is
+  the relevant deep dive.
+
+\item \textbf{Sandboxes and execution infrastructure.} The
+  isolated environment in which the model's tool calls actually
+  run: containers, gVisor or Firejail boxes, ephemeral worktrees,
+  headless browsers. The sandbox is what makes giving an agent
+  shell access tractable rather than catastrophic.
+  Chapter~\ref{ch:reliable} treats the security model.
+
+\item \textbf{The control loop.} The driver that calls the
+  model, parses out tool invocations, dispatches them, packages
+  results back into the model's input, and decides when to stop.
+  This is the heart of the runtime and is unpacked in
+  \S\ref{sec:agents-harness-loop} below.
+
+\item \textbf{Hooks and middleware.} Deterministic checks that
+  fire at specific points in the loop --- before a tool call,
+  after a file edit, before a commit. Hooks block destructive
+  commands, auto-format generated code, run a typechecker, and
+  inject the failures back into the model's next input. The
+  harness pattern here is that success is silent and failure is
+  verbose: the model only hears about a hook when it failed.
+
+\item \textbf{Orchestration.} Logic for spawning subagents,
+  handing off between them, routing across models, and merging
+  their work back together. A single-agent harness can omit this
+  layer; a multi-agent harness lives here.
+
+\item \textbf{Observability.} Logs, traces, token accounting,
+  cost and latency metering, replay tooling. The harness is also
+  what makes the agent's behavior debuggable after the fact.
+
+\end{itemize}
+
+\noindent
+Two observations follow from the inventory. First, the surface
+area is enormous, and almost none of it is the model. Open-source
+coding agents --- Claude Code, Cursor, Codex, Aider, Cline ---
+can run on the same underlying model and produce strikingly
+different behavior, because everything in the list above is theirs
+to design. Second, with the inventory in front of us the
+``observation--action'' framing of RL becomes operational. The
+observation is whatever text the harness has assembled and is
+about to send to the model: the system prompt plus instructions,
+the relevant slice of state, the previous turn's tool results,
+the conversation so far. The action is whatever the harness
+parses out of the model's response: a tool call with structured
+arguments, a final answer, an exit signal. Everything else in the
+list is the machinery that turns the first into the second and
+back again.
+
+\subsection{The Control Loop}
+\label{sec:agents-harness-loop}
+
+The runtime pattern that ties the inventory together is the same
+across nearly every modern agent harness and is structurally
+identical to the ReAct loop introduced
+by~\citet{yao2023react}:
+
+\begin{enumerate}[label=(\arabic*),leftmargin=2em,itemsep=0.2em]
+\item Assemble the next \emph{observation} --- system prompt,
+  instructions, current state summary, tool catalog, conversation
+  so far, last tool result.
+\item Call the model.
+\item Parse the model's output. If it contains a tool call,
+  extract the tool name and arguments; if it contains a final
+  answer, return.
+\item Dispatch the tool call through the sandbox, gated by
+  pre-call hooks.
+\item Capture the result, optionally truncate or offload large
+  outputs to the filesystem, gate it through post-call hooks,
+  format it as the next turn's observation.
+\item Update memory, scratchpads, and any cross-turn state.
+\item Check termination conditions (final answer, step budget,
+  cost budget, fatal hook failure). If none fired, go to step~1.
+\end{enumerate}
+
+\noindent
+Two things about this loop are worth flagging because they are
+sources of recurring confusion. The first is that it is not the
+same as the model's autoregressive loop. The model's loop is
+inside step~2 and operates on tokens; the agent's loop is the
+outer one and operates on tool calls. The two are nested, not
+identical. A model with a 200,000-token context window may take
+hundreds of internal token-by-token steps to produce a single
+agent step. Conversely, an agent may run for thousands of agent
+steps, each of which is one model call, each of which is many
+token steps. The dimensions matter independently, and bugs at
+each level look very different. The second is that
+\emph{step~5 --- formatting the observation} is where most of the
+``intelligence'' of a good harness actually lives. Whether a
+2,000-line log gets inlined verbatim, truncated to its head and
+tail, summarized, or written to disk and replaced by a one-line
+pointer is a harness decision, not a model decision. The reader
+will find that two harnesses running the same model on the same
+task can produce wildly different transcripts because their
+step-5 policies differ, and that the gap is sometimes larger
+than the gap between two models in the same harness. The variant
+in which the model emits \emph{executable code} rather than
+JSON-shaped tool calls --- CodeAct~\citep{wang2024codeact} ---
+is a step-4-and-5 choice and changes nothing about the overall
+loop.
+
+\subsection{The Ratchet}
+\label{sec:agents-harness-ratchet}
+
+The harness inventory and control loop together describe the
+\emph{structure} of a harness; they do not yet describe how it is
+built or evolved. The discipline behind the structure has come to
+be called \emph{harness engineering}, and its central habit is a
+ratchet: every observed failure becomes a permanent constraint
+written into the harness, so that the same failure cannot recur.
+Osmani~\citep{osmani2026harness} states the rule starkly: ``every
+line in a good system prompt should trace back to a specific,
+historical failure.''
+
+The mechanism is concrete. If the agent commits with a
+commented-out test, the project's \code{AGENTS.md} gains a line
+forbidding it; a pre-commit hook starts flagging \code{.skip(} in
+the diff; if there is a reviewer subagent, it gets a rule that
+blocks the pattern. If the agent ran a destructive shell command,
+a hook blocks the pattern by name on the next attempt and the
+sandbox's allowlist is tightened. If the agent got lost in a
+forty-step task, the harness gains a planner subagent that splits
+work into checkpoints. If the agent stopped early on a still-failing
+test, a hook intercepts the stop attempt and injects the failing
+output back into the loop. Each addition removes a failure mode
+once and for all; each is small; the cumulative effect is what
+turns a brittle prototype into a system that ships.
+
+The corollary is that there is no universal best harness. The
+correct harness for a particular codebase, team, and task is the
+one whose constraints map onto that team's failure history.
+Imported templates are useful as starting points but should not
+be cargo-culted: a constraint that has not been earned by an
+observed failure is paying ongoing cost (in context window, in
+maintenance, in opacity) for no benefit. The corresponding
+release valve is to delete constraints when a model improvement
+renders them redundant, which keeps the harness from accreting
+into a fossil record of failures the current model no longer
+makes. The result is a continuously edited artifact rather than
+a configuration file; harnesses, as Osmani puts it, ``don't
+shrink, they move'' --- as models improve, the floor rises but
+the ceiling rises faster, and new failure modes appear at the
+new horizon for the harness to address.
+
+The remaining sections of this chapter take the components named
+here and walk through them with the depth they each deserve.
+
+\section{Levels of Autonomy}
+\label{sec:agents-autonomy}
+
+\todo{Section stub. Develop the autonomy spectrum sketched
+above into a usable taxonomy: operator, collaborator, consultant,
+approver, observer (Feng et al.\ framing, also used by the AI
+Agent Index). Walk each level through a worked example
+(refactoring a module) so the reader sees what changes at the
+interface and what changes in the failure modes.}
+
+\section{The Agent Landscape}
+\label{sec:agents-landscape}
+
+\todo{Section stub. Survey what has actually been deployed,
+using the AI Agent Index~\citep{staufer2026aiagentindex} as the
+empirical spine. Three deployment forms (chat with agentic
+tools, browser agents, enterprise agent builders); concentration
+on three foundation-model families; the transparency findings
+(135/240 safety fields blank, only four agents with
+agent-specific safety evaluations). Reproduce or reference the
+Index's growth figure to anchor the discussion. Use this section
+to motivate the safety and evaluation chapter
+(Chapter~\ref{ch:reliable}).}
+
+\section{Why Agents Fail}
+\label{sec:agents-fail}
+
+\todo{Section stub. Catalogue of failure modes specific to the
+agent loop, distinct from the model-level failures of
+\S\ref{sec:mental-failures}: compounding error over long
+horizons, context-window saturation, tool-call hallucination,
+goal drift, premature termination, and infinite loops.
+Forward-reference Chapter~\ref{ch:reliable} for the
+operational mitigations.}

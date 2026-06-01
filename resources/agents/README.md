@@ -84,6 +84,17 @@ Papers, articles, and code on the design of LLM-based agents: action spaces, har
 - **Local:** `2026_memo-memory-as-a-model.pdf`
 - **Summary:** Encodes new knowledge into a dedicated MEMORY model while keeping the base LLM frozen — positioned as a fourth option alongside RAG, in-context learning, and continued training/fine-tuning. Claims it captures cross-document relationships, is robust to retrieval noise, avoids catastrophic forgetting, needs no access to LLM weights/logits (plug-and-play with closed models), and has retrieval cost independent of corpus size at inference. Evaluated on BrowseComp-Plus, NarrativeQA, MuSiQue. Sandro kept it for its pros/cons discussion of RAG vs. ICL vs. training on the codebase — relevant to the context-and-retrieval chapter.
 
+### The 2025 AI Agent Index — Staufer et al., 2026 (FAccT '26)
+- **Title:** The 2025 AI Agent Index: Documenting Technical and Safety Features of Deployed Agentic AI Systems
+- **arXiv:** [2602.17753](https://arxiv.org/abs/2602.17753)
+- **Local:** `2026_staufer_ai-agent-index.pdf`
+- **Summary:** Documents 30 widely deployed agentic systems across six categories — legal, technical capabilities, autonomy & control, ecosystem interaction, evaluation, and safety — based on public information plus correspondence with developers. Section 2 opens with "Definitions of AI agents are nebulous and differ across fields" and tours how cybernetics, artificial life, rational agency, software engineering, RL, and philosophy each carve up the term, with citations — useful when we need to ground the term in a proposal instead of waving at it. Headline findings: most safety-related fields are blank (135/240), nearly all indexed agents run on three foundation-model families (GPT, Claude, Gemini), most don't disclose their AI nature to end users by default, and only four agents publish agent-specific safety evals. Fig. 1 (paper counts + Google search terms + agent releases by category over 2020–2026) and Fig. 2 (agency / impact / practicality inclusion criteria) are both quotable on the state of the landscape. Index lives at aiagentindex.mit.edu.
+
+### Agent Harness Engineering — Osmani, 2026
+- **Source:** [X thread](https://x.com/addyosmani/status/2053231239721885918)
+- **Local:** `2026_osmani_harness-engineering.md`
+- **Summary:** Synthesis post around Vtrivedy's `Agent = Model + Harness` equation: the harness is *everything that isn't the model* — system prompts, tools, MCP servers, sandboxes, orchestration, hooks, observability, recovery paths. Argues that the gap between what models can do and what we see them doing is largely a harness gap, and proposes the "ratchet" discipline: every failure becomes a permanent rule (AGENTS.md entry, hook, reviewer subagent). Names the canonical components — filesystem + git for durable state, bash for general-purpose action, sandboxes for safe execution, memory files for continual learning, context-rot mitigations (compaction, tool-call offloading, progressive disclosure), long-horizon scaffolding (loops, planning, splits), hooks as enforcement, AGENTS.md as the rulebook. Closes with "harnesses don't shrink, they move" (better models raise the ceiling, not eliminate the harness) and the HaaS observation (SDKs are shifting from completions APIs to runtime APIs). The clearest current statement of harness vocabulary; pairs naturally with the agents-chapter §2 we're writing.
+
 ---
 
 ## Web articles & repos (link-only)

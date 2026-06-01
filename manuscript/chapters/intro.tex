@@ -51,7 +51,20 @@ informal reasoning and the Aristotle theorem prover for
 resolution is the first Erd\H{o}s problem widely regarded as having
 been solved autonomously by an AI system. The verifier rules out
 hallucinated proofs by construction, which is what makes the result
-trustworthy in a way that an unaided model's output is not.
+trustworthy in a way that an unaided model's output is not. By
+May~2026 the pattern had been industrialized: a Google DeepMind
+team built \emph{AlphaProof Nexus}, a framework in which Gemini~3.1
+Pro subagents propose Lean proof sketches and the Lean compiler
+verifies them, optionally coordinated by an evolutionary search;
+their full-featured agent autonomously resolved 9 of 353 open
+Erd\H{o}s problems and proved 44 of 492 open conjectures from the
+Online Encyclopedia of Integer Sequences, at a few hundred dollars
+per problem~\citep{tsoukalas2026alphaproofnexus}. The same paper
+reports that a stripped-down agent --- just LLM-generation
+alternating with Lean verification, no specialized prover ---
+solved all 9 Erd\H{o}s problems too, though more expensively on
+the hardest. As LLMs get stronger, the specialized scaffolding
+shrinks; the loop does not.
 
 In January~2026, a research group at KAIST reported a workflow in
 which a language model proposes structural redesigns of materials
@@ -63,11 +76,34 @@ new chemistry; it explored a vast combinatorial space too quickly
 for a human to match, with the chemistry kept honest by tools the
 model could call.
 
-The common thread runs through every example. None of these is a
-naked language-model achievement. Each one is a \emph{system} ---
-a model in a loop with executors, verifiers, search procedures, and
-human-defined oversight. The model is the engine; the system is
-the vehicle.
+In May~2026, a separate result from OpenAI shifted the upper
+bound of what the math community considers achievable: a
+general-purpose reasoning model --- not a system trained for
+mathematics, not scaffolded toward proof search, not targeted at
+this problem --- \emph{disproved} Erd\H{o}s's planar
+unit-distance conjecture~\citep{openai2026discrete}. The proof
+imports infinite class field towers and Golod--Shafarevich theory
+into a purely combinatorial-geometry question, a cross-domain
+bridge nobody had expected. External mathematicians, led by Will
+Sawin at Princeton, verified the construction and pinned down a
+fixed $\delta = 0.014$ for the new $n^{1+\delta}$ lower bound;
+Tim Gowers called the result ``a milestone in AI mathematics.''
+Unlike the formal-proof results above, the OpenAI disproof did
+not lean on a Lean verifier or any specialized harness; the
+system around the model was a batch evaluation that surfaced the
+output and a community of mathematicians who checked it after the
+fact.
+
+The common thread runs through every example, though to different
+degrees. None of these is a naked language-model achievement;
+each is a \emph{system} --- a model in a loop with some
+combination of executors, verifiers, search procedures, and human
+or machine oversight. The mix varies. The C compiler is mostly
+model-plus-orchestration. The Erd\H{o}s and OEIS results are
+mostly model-plus-formal-verifier. The KAIST materials work is
+mostly model-plus-domain-rules. The discrete-geometry disproof is
+mostly model-plus-external-review. But the pattern is consistent:
+the model is the engine; the system is the vehicle.
 
 \section{A Moving Target}
 \label{sec:intro-target}

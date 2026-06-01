@@ -26,6 +26,8 @@ Conventions:
 | 2026 | Tomašev | Intelligent AI Delegation (DeepMind) | [arXiv:2602.11865](https://arxiv.org/abs/2602.11865) | [L] `2026_deepmind_intelligent-ai-delegation.pdf` |
 | 2026 | Sen | Is Grep All You Need? — How Agent Harnesses Reshape Agentic Search | [arXiv:2605.15184](https://arxiv.org/abs/2605.15184) | [L] `2026_is-grep-all-you-need.pdf` |
 | 2026 | Quek | MEMO: Memory as a Model | [arXiv:2605.15156](https://arxiv.org/abs/2605.15156) | [L] `2026_memo-memory-as-a-model.pdf` |
+| 2026 | Staufer | The 2025 AI Agent Index — Technical & Safety Features of Deployed Agents (FAccT '26) | [arXiv:2602.17753](https://arxiv.org/abs/2602.17753) | [L] `2026_staufer_ai-agent-index.pdf` |
+| 2026 | Osmani | Agent Harness Engineering (synthesis of Vtrivedy's `Agent = Model + Harness`) | [x.com thread](https://x.com/addyosmani/status/2053231239721885918) | [L] `2026_osmani_harness-engineering.md` |
 | — | NVIDIA | Tool Orchestra | [research.nvidia.com](https://research.nvidia.com/labs/lpr/ToolOrchestra/) | [W] |
 | — | Anthropic | Code execution with MCP | [anthropic.com](https://www.anthropic.com/engineering/code-execution-with-mcp) | [W] |
 | — | Microsoft | RPG-ZeroRepo (repo) | [github](https://github.com/microsoft/RPG-ZeroRepo) | [W] |
@@ -93,6 +95,7 @@ Conventions:
 |---|---|---|---|---|
 | 2025 | Leviathan | Prompt Repetition Improves Non-Reasoning LLMs | [arXiv:2512.14982](https://arxiv.org/abs/2512.14982) | [L] `2025_oddity.pdf` |
 | 2026 | Sankaralingam | Computer Architecture's AlphaZero Moment | [arXiv:2604.03312](https://arxiv.org/abs/2604.03312) | [L] `2026_llm-driven-architecture-design.pdf` |
+| 2026 | Tsoukalas (DeepMind) | AlphaProof Nexus — Advancing Math Research with AI-Driven Formal Proof Search | [arXiv:2605.22763](https://arxiv.org/abs/2605.22763) | [L] `2026_tsoukalas_ai-formal-proof-search.pdf` |
 | 2026 | OpenAI | Disproved a Central Conjecture in Discrete Geometry (unit-distance problem) | [openai.com](https://openai.com/index/model-disproves-discrete-geometry-conjecture/) | [L] `2026_openai_disproves-discrete-geometry-conjecture.md` |
 | 2026 | OpenAI | Where the Goblins Came From | [openai.com](https://openai.com/index/where-the-goblins-came-from/) | [L] `2026_openai_where-the-goblins-came-from.md` |
 | — | OpenAI | Harness Engineering | [openai.com/index/harness-engineering](https://openai.com/index/harness-engineering/) | [W] |

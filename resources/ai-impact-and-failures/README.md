@@ -20,6 +20,12 @@ Two intertwined topics from the README's interest list:
 - **Local:** `2025_oddity.pdf`
 - **Summary:** When *not* using reasoning, simply repeating the input prompt improves performance for popular models (Gemini, GPT, Claude, Deepseek) without increasing generated tokens or latency. The "interesting oddity" Sandro flagged.
 
+### AlphaProof Nexus — Tsoukalas et al., 2026 (Google DeepMind)
+- **Title:** Advancing Mathematics Research with AI-Driven Formal Proof Search
+- **arXiv:** [2605.22763](https://arxiv.org/abs/2605.22763)
+- **Local:** `2026_tsoukalas_ai-formal-proof-search.pdf`
+- **Summary:** First large-scale evaluation of LLM-aided formal-proof generation on *open* research problems. Their full-featured agent (Gemini 3.1 Pro + Lean compiler + AlphaProof, orchestrated by an evolutionary algorithm over prover subagents) autonomously resolved **9 of 353 open Erdős problems** at a few hundred dollars per problem, **proved 44/492 OEIS conjectures**, resolved a 15-year-old open Hilbert-functions question in algebraic geometry, improved a convex-optimization bound, and is being deployed across combinatorics, optimization, graph theory, and quantum optics research. The headline finding for the corpus: a *basic* agent that just alternates LLM generation with Lean verification, no AlphaProof, solved all 9 Erdős problems too (more expensively on the hardest) — evidence that "as LLMs become more capable, the pattern shifts from specialized trained systems toward simple agentic loops." Strong follow-on data point to the Erdős #728 result already cited in the manuscript intro.
+
 ---
 
 ## Web articles & reports
