@@ -193,6 +193,17 @@
 \newcommand{\fname}[1]{\texttt{#1}}
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{TODO:} #1}}
 
+% \claude{...} -- inline annotation to be incorporated by Claude
+% on a subsequent pass. Renders in orange sans-serif so it's
+% obvious in the PDF and easy to grep for in source:
+%   grep -rn '\\claude{' manuscript/chapters/
+% Once Claude addresses the note, the entire \claude{...} call is
+% deleted from the source.
+\definecolor{claudemark}{HTML}{B8651B}
+\newcommand{\claude}[1]{%
+  {\sffamily\small\textcolor{claudemark}{[\textbf{Claude:}~#1]}}%
+}
+
 % --- Title face (subtle textbook look) ---------------------------
 \titleformat{\chapter}[display]
   {\normalfont\sffamily\bfseries\color{accent}}
