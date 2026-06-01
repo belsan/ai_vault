@@ -70,17 +70,23 @@ them (\S\ref{sec:mental-sampling}) are the knobs on this loop.
 \begin{examplebox}
 \small
 \textbf{One step of the loop.} Given the input
-``\code{The capital of Switzerland is}'', a Gemma-class model
-returns a distribution dominated by the token \code{ Bern}, with
-smaller probability mass on \code{ Berne}, \code{ Zurich},
-\code{ the}, and a long tail of less-likely candidates. Greedy
-sampling at temperature zero picks \code{ Bern}. The host appends
-it to the input, producing
-``\code{The capital of Switzerland is Bern}'', and calls the model
-again. The next-token distribution this time is dominated by
-\code{.}; greedy sampling picks it; the input is now
-``\code{The capital of Switzerland is Bern.}''. And so on, until
-the model emits an end-of-sequence token or the runtime stops it.
+``\code{To be or not to}'' --- a phrase Gemma~4 has seen
+verbatim in its training data thousands of times --- the model
+returns a distribution sharply peaked on the token \code{ be},
+at essentially 100\% probability. Greedy sampling at
+temperature zero picks \code{ be}; the host appends it to the
+input, producing ``\code{To be or not to be}'', and calls the
+model again. The next call's distribution is, perhaps
+surprisingly, also dominated by \code{ or} at essentially
+100\% --- because the base model continues the parallel
+construction it has seen many times in song lyrics, parodies,
+and academic paraphrases, not, as one might naively expect,
+with ``\code{, that is the question}.'' And so on, token by
+token, until the model emits an end-of-sequence token or the
+runtime stops it. Why this base-model behavior is \emph{not}
+the same as ``the model answers what is being asked'' --- and
+what changes when we wrap the input in a chat template --- is
+the substance of \S\ref{sec:mental-tokens-practice}.
 \end{examplebox}
 
 \noindent
@@ -398,6 +404,320 @@ of this failure mode lives in \S\ref{sec:strawberry}; the short
 version here is enough to set up the broader taxonomy of
 \S\ref{sec:mental-failures}, where tokenizer-level failures are
 one cell in the larger picture.
+
+\section{Tokens and Probabilities in Practice}
+\label{sec:mental-tokens-practice}
+
+The previous section described tokens, vocabularies, and BPE in the
+abstract. The picture sharpens considerably once one inspects a
+specific tokenizer's vocabulary and probes a specific model's
+next-token distribution. Both are easy to do offline with an
+open-weights model and a local Ollama installation. We use Gemma~4
+throughout this section as a representative case; the scripts that
+produced the numbers below live in
+\fname{manuscript/scripts/tokenization.py} and
+\fname{manuscript/scripts/next\_token\_logprobs.py}. The reader is
+invited to run them, change the inputs, and watch the distribution
+shift in response.
+
+\subsection{Inside Gemma 4's Vocabulary}
+\label{sec:mental-tokens-vocab}
+
+Gemma~4 ships a SentencePiece-trained vocabulary of 262{,}145
+entries --- 255{,}730 ordinary tokens and 6{,}415 ``added''
+tokens reserved for chat-template markers, padding, and similar
+protocol bits. The BPE merge list that produced this vocabulary
+holds 514{,}906 rules. Inspecting the very first merges is less
+illuminating than one might hope, because they are dominated by
+long runs of whitespace --- a side-effect of training data dense
+with source code and markdown indentation. The first 1{,}393
+merges in Gemma~4 are all whitespace-only. After that, the picture
+becomes familiar. The first non-whitespace merges are the
+highest-frequency English bigrams, in order:
+\begin{quote}
+  \code{▁t}, \code{in}, \code{▁a}, \code{er}, \code{on},
+  \code{he}, \code{re}, \code{en}, \code{at}, \code{▁s},
+  \code{or}, \code{▁c}, then \code{▁the}.
+\end{quote}
+
+\noindent
+This is roughly the canonical English letter-pair frequency
+ordering going back to Mayzner and Tresselt. BPE is doing what
+it advertises.
+
+Two properties of the resulting vocabulary are worth dwelling
+on, because both will reappear in the probability discussion
+below.
+
+\paragraph{The longest tokens are sixteen characters.}
+The longest entries in Gemma~4's regular vocabulary all cap at
+sixteen characters, and fall into three families:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item Long English words: \code{circumferential},
+  \code{Notwithstanding}, \code{straightforward}.
+\item Coding identifiers: \code{InvariantCulture},
+  \code{SubDirectoryPath}, \code{FileInputStream}.
+\item Spanish and Portuguese words: \code{entretenimiento},
+  \code{acontecimientos} (Spanish), \code{disponibilidade}
+  (Portuguese).
+\end{itemize}
+
+\noindent
+That a sixteen-character C\# identifier has its own single
+integer ID is, on first encounter, jarring. It is exactly what
+the recipe predicts once the input distribution is in view: the
+model has been trained on enough .NET code that BPE merged
+\code{SubDirectoryPath} all the way up. The identifier is one
+token to predict, one token to bill, and one position to attend
+over. None of this is the model's intelligence; it is a feature
+of the input encoding, frozen at tokenizer-training time.
+
+\paragraph{The leading space lives with the next word.}
+SentencePiece marks a leading space with a `\code{▁}' prefix
+(U+2581, ``lower one eighth block''). The tokenizer's view of
+\code{"Switzerland is Bern"} is
+\code{[Switzerland][▁is][▁Bern]} --- each non-initial word's
+leading space is part of that word's own token, and there is no
+separate inter-word space token in fluent prose. The downstream
+consequence is that small variations on a word produce
+surprisingly different token sequences. Five concrete examples
+make the point:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item \code{" Bern"} (with leading space)
+  $\to$ \code{[▁Bern]} --- one token. What \code{Bern} looks like
+  mid-sentence.
+\item \code{"Bern"} (no space)
+  $\to$ \code{[Bern]} --- also one token, a separate vocabulary
+  entry. The bare form exists for start-of-string and
+  post-punctuation contexts.
+\item \code{"Bern "} (with trailing space)
+  $\to$ \code{[Bern][▁]} --- \emph{two} tokens. Nothing follows
+  the trailing space, so it cannot merge into a word-token; it
+  becomes a standalone whitespace token.
+\item \code{"Berne"} (older French spelling)
+  $\to$ \code{[Ber][ne]} --- two tokens. The form is rare enough
+  that BPE never gave it a dedicated entry.
+\item \code{" Bremen"} $\to$ \code{[▁Bremen]} (one token); but
+  \code{"Bremen"} $\to$ \code{[B][remen]} (two). Mid-sentence
+  Bremen costs one token; start-of-string Bremen costs two.
+\end{itemize}
+
+\noindent
+Coverage is uneven even within the small set of European
+capitals. \code{" Berlin"} and \code{" Zurich"} are each one
+token because training data contains them at saturation;
+\code{" Berne"} is two either way. None of this is wrong --- every
+string remains representable, falling back to smaller subwords
+and ultimately to single bytes --- but the cost in tokens, in
+attention, and in the model's prediction problem is not uniform
+across what the user would consider ``the same word.''
+
+\subsection{Probabilities in Practice}
+\label{sec:mental-tokens-probabilities}
+
+A familiar tutorial cliche goes like this: you type
+\code{"The capital of Switzerland is"} into a language model,
+and out comes \code{Bern}, because the model has the fact stored
+and retrieves it. The cliche is convenient and substantially
+misleading. The model is not a fact-retrieval function. It is a
+stateless conditional sampler trained to predict the next token
+in a stream of text, with no concept of ``question'' until one
+has been wrapped around the input by an external chat template.
+Three probes against Gemma~4 illustrate what is actually going
+on. All numbers below are from the 26B Gemma~4 variant; the
+smaller e2b variant produces qualitatively similar shapes with
+a flatter distribution.
+
+\paragraph{Probe 1: bare prompt, no chat template.}
+Feed the literal string \code{"The capital of Switzerland is"}
+to Gemma~4 with the \code{raw=true} flag --- no chat-template
+wrapper, no system prompt, exactly the bytes shown. The top four
+next-token candidates are:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+token & probability \\
+\midrule
+\code{" capital"} & 64.5\% \\
+\code{" the"}     &  6.3\% \\
+\code{" being"}   &  3.8\% \\
+\code{" a"}       &  2.9\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+There is no \code{" Bern"} in the top ten. The model knows about
+Bern, perfectly well --- probe~3 will demonstrate it --- but with
+no chat template, it has no instruction to give an answer. It is
+doing what pre-training trained it to do: predict the next token
+in a stream. In actual text, ``The capital of Switzerland is''
+is followed by encyclopedic prose: ``the city of Bern, located
+in\,\dots,'' ``also the seat of the federal assembly\,\dots,''
+``a small city of about 130{,}000 inhabitants\,\dots,'' or ---
+driving the top candidate --- ``the capital of the canton of
+Bern.'' The token \code{" capital"} reflects exactly that last
+pattern, the kind of mildly self-referential sentence (``Bern,
+the capital of Switzerland, is the capital of the canton of
+Bern.'') that genuinely appears in geography references.
+
+\paragraph{Probe 2: bare prompt plus one trailing space.}
+Add a single space --- \code{"The capital of Switzerland is "} ---
+and the distribution changes shape entirely:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+token & probability \\
+\midrule
+\code{"6"}       & 39.5\% \\
+\code{"0"}       & 19.5\% \\
+\code{"1"}       & 15.2\% \\
+\code{"2"}       &  4.5\% \\
+\code{"\textbackslash n"} &  4.1\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+The leading-space property of the tokenizer is the cause. The
+trailing space tokenizes as a standalone \code{[▁]} token, and
+any candidate that starts with `\code{▁}' would mean two
+consecutive spaces in the surface text --- vanishingly rare in
+clean prose. So the entire leading-space portion of the
+vocabulary --- every word-token --- drops out of the running.
+What remains is the no-space portion: digits, punctuation,
+control characters. The model picks the contexts in training
+data where exactly this configuration appears: enumerated MCQs
+(``\code{...is\ \_\_\_\textbackslash n1.\ Bern\textbackslash n2.\ Zurich}\,\dots''),
+numeric facts and page numbers (``\code{...is\ 134{,}591\,\dots}''),
+and scraped text where a trailing space was an editorial slip
+before a line break. The user who typed the trailing space
+``meant'' nothing by it; the model has no choice but to show
+what the byte sequence actually leads to in the wild.
+
+\paragraph{Probe 3: chat template, thinking suppressed.}
+Wrap the same question in Gemma~4's chat template. What the model
+actually receives is:
+
+\begin{lstlisting}[basicstyle=\ttfamily\footnotesize,numbers=none,frame=single,framerule=0.4pt,xleftmargin=1em,xrightmargin=1em]
+<start_of_turn>user
+What is the capital of Switzerland? Answer in one word.<end_of_turn>
+<start_of_turn>model
+\end{lstlisting}
+
+\noindent
+Disable the thinking channel via Ollama's \code{think: false}
+flag on its native \code{/api/chat} endpoint (the
+OpenAI-compatible \code{/v1/chat/completions} silently ignores
+the flag). The first-token distribution at the answer position is:
+
+\begin{center}
+\begin{tabular}{lr}
+\toprule
+token & probability \\
+\midrule
+\code{"Bern"}    & 100.00\% \\
+\code{"Ber"}     &   0.00\% \\
+\code{" Bern"}   &   0.00\% \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\noindent
+Bern at one hundred percent. The model knew the answer the
+entire time. The difference between probes~1 and~3 is not
+knowledge but input scaffolding: a chat template wrapping the
+question, and a flag that suppresses the model's thinking
+channel so the first token is the answer rather than a
+reasoning preamble.
+
+\subsubsection*{What models are actually trained on}
+
+The gap between probes 1 and 3 traces to the layered structure
+of modern LLM training. Four stages, roughly:
+
+\begin{enumerate}[leftmargin=1.5em,itemsep=0.2em]
+\item \textbf{Pre-training} on a multi-trillion-token corpus of
+  web text, books, and source code, with the next-token-prediction
+  objective. This produces the base model. Probes 1 and~2 are
+  reading directly off this layer.
+\item \textbf{Supervised fine-tuning (SFT)} on hundreds of
+  thousands to millions of human-curated dialog examples. User
+  turns are wrapped in role-tagged chat templates; assistant
+  responses follow a particular style. The chat-template tokens
+  --- \code{<start\_of\_turn>}, \code{<end\_of\_turn>}, the role
+  markers --- appear here for the first time as meaningful
+  structure rather than as random byte sequences.
+\item \textbf{Reinforcement learning from human feedback (RLHF)},
+  or its AI-rater cousin RLAIF. The model is shown competing
+  candidate responses, picks one, and is rewarded or penalized
+  according to rater preference. This tunes tone, helpfulness,
+  and refusal behavior.
+\item \textbf{Reasoning specialization.} A more recent training
+  pass that introduces a private ``thinking'' channel --- marked
+  with its own structural tokens --- in which the model writes
+  intermediate reasoning before producing a user-facing answer.
+  Suppressing it is what the \code{think: false} flag in probe~3
+  is for.
+\end{enumerate}
+
+\noindent
+The control sequences that distinguish probe 3 from probe 1 ---
+\code{<start\_of\_turn>}, \code{<end\_of\_turn>}, the
+thinking-channel markers --- are artifacts of stages~2--4. The
+base model has never been instructed that ``this is a question,
+answer it.'' What it has done is read enormous amounts of text.
+The post-training stages teach it: ``when wrapped in this
+template, your job is to produce an answer in this style.''
+Without the wrapper, the prior remains the pre-training prior:
+predict the next token in a continuation. The wrapper is
+something the host application controls --- not the model.
+
+\subsubsection*{Three takeaways}
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.3em]
+
+\item \textbf{Token probabilities are conditional distributions,
+  not facts.} They are conditioned on a specific token sequence,
+  sampled from a specific training distribution. They report the
+  model's continuation prior, not its beliefs.
+
+\item \textbf{One byte of input can swing the output.} Probes 1
+  and 2 differ by a single trailing space and produce radically
+  different distributions. Tokenizer mechanics propagate.
+  Tutorials that wave at tokenization as ``a detail you don't
+  need to worry about'' are misleading you.
+
+\item \textbf{Chat templates and thinking channels are part of
+  the system, not the model.} The reason ``The capital of
+  Switzerland is'' does not produce ``Bern'' while a chat-wrapped
+  question does is not a model deficit but a missing wrapper.
+  The engineer extracting reliable behavior from an LLM must
+  reason at the granularity of ``what token sequence is the model
+  seeing right now,'' not ``what question is the user asking.''
+  The two are related, but they are not the same.
+
+\end{itemize}
+
+\begin{asidebox}[title={Aside --- Choosing the ``best'' sequence}]
+\small
+The probes above quietly assume that the most-probable next token
+is the ``right'' one --- and, by extension, that the most-probable
+\emph{sequence} would be the best output. The actual story is less
+tidy. A line of work in the neural-translation literature, summarised
+under the name \emph{inadequacy of the mode}~\citep{eikema2020inadequacy},
+showed that for the majority of test sentences the human
+gold-reference translation receives \emph{lower} model probability
+than the model's own most-probable output. The global maximum of a
+trained sequence model's distribution is often not where the best
+text lives. We will treat sampling-based decoding in
+\S\ref{sec:mental-sampling} without belabouring the point; the
+interested reader is warmly invited to follow the reference.
+\end{asidebox}
 
 \section{The Context Window}
 \label{sec:mental-context}

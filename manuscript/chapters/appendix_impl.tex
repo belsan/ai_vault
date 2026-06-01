@@ -1,0 +1,145 @@
+% =============================================================
+% Appendix A. Implementation Notes
+% Loaded by main.tex after \appendix.
+% =============================================================
+
+\chapter{Implementation Notes: Tokenizer and Logprobs}
+\label{ch:app-impl}
+
+The probes and vocabulary statistics reported in
+\S\ref{sec:mental-tokens-practice} are reproducible with a few
+dozen lines of Python against a local Ollama installation and a
+publicly available copy of the Gemma 4 tokenizer. This appendix
+lists the moving parts and points at the scripts in the
+\fname{manuscript/scripts/} directory that exercise them, in
+enough detail that an interested reader can run, modify, or
+port the probes themselves. No full listings; the scripts are
+the listings.
+
+\section{Inspecting Gemma 4's tokenizer}
+\label{sec:app-tokenizer}
+
+A trained tokenizer is, at the file level, a small artifact: a
+flat JSON file that records everything needed to reproduce the
+encoding deterministically. Sharing a tokenizer therefore
+reduces to sharing this file, and most modern model releases
+(Gemma 4 included) ship it alongside the weights. Google's
+official Gemma weights are gated behind a license click; the
+publicly mirrored copy at \code{unsloth/gemma-3-4b-it} on
+HuggingFace serves the same \code{tokenizer.json}
+unauthenticated, and is what produced the vocabulary statistics
+in \S\ref{sec:mental-tokens-vocab}.
+
+The JSON file holds three things: the vocabulary (a dictionary
+mapping token strings to integer IDs), the ordered list of BPE
+merge rules, and the set of ``added'' tokens reserved for
+protocol markers (chat-template tags, padding, end-of-sequence)
+that are not produced by the merge process. Token probabilities
+reported elsewhere in this appendix are \emph{logprobs} ---
+natural logarithms of probability, non-positive, with
+$p = e^{\ell}$ recovering the probability.
+
+The HuggingFace \code{tokenizers} library
+(\code{pip install tokenizers}) loads the JSON in one call and
+gives you the rest:
+
+\begin{lstlisting}[language=Python,basicstyle=\ttfamily\footnotesize,numbers=none,frame=single,framerule=0.4pt,xleftmargin=1em,xrightmargin=1em]
+from tokenizers import Tokenizer
+
+tok = Tokenizer.from_file("tokenizer.json")
+enc = tok.encode("The capital of Switzerland is Bern")
+print(enc.tokens)   # ['The', 'capital', 'of', ..., 'Bern']
+print(enc.ids)      # [818, 4032, 529, ..., 49870]
+\end{lstlisting}
+
+\noindent
+The script \fname{manuscript/scripts/tokenization.py} wraps this
+into the four operations used in the book:
+
+\begin{itemize}[leftmargin=1.5em,itemsep=0.2em]
+\item Encode a string and read off both token IDs and the
+  pretty-printed pieces (\code{Tokenizer.encode}).
+\item List the regular vocabulary, filtering out the added/special
+  tokens reserved for chat-template markers and padding.
+\item Sort by token length to find the longest entries.
+\item Walk the BPE merge list, in order, to inspect the
+  highest-frequency pairs at the top and the rarest at the
+  bottom. The merge list itself lives in the JSON file's
+  \code{model.merges} array.
+\end{itemize}
+
+\noindent
+The qualitative pattern --- whitespace-only merges dominating
+the first 1{,}393 entries, then English bigrams, then the long
+tail into other scripts and rare strings --- is robust across
+the mirrored and gated copies, and (within the limits of
+cross-model comparison) across the \code{gemma4:26b} and
+\code{gemma4:e2b} sibling models we use in the book.
+
+\section{The experiments in more detail}
+\label{sec:app-logprob-probes}
+
+Once an Ollama server is reachable and a Gemma 4 variant is
+pulled, the three probes of \S\ref{sec:mental-tokens-probabilities}
+take three HTTP calls. The script
+\fname{manuscript/scripts/next\_token\_logprobs.py} demonstrates
+each as a small function; the moving parts are summarized below.
+
+\paragraph{Base-model continuation prior (Probes 1 and 2).}
+POST to \code{/api/generate} with the following body:
+
+\begin{lstlisting}[language=json,basicstyle=\ttfamily\footnotesize,numbers=none,frame=single,framerule=0.4pt,xleftmargin=1em,xrightmargin=1em]
+{
+  "prompt":        "<input string>",
+  "raw":           true,
+  "stream":        false,
+  "options":       {"num_predict": 1, "temperature": 0},
+  "logprobs":      true,
+  "top_logprobs":  K
+}
+\end{lstlisting}
+
+\noindent
+The \code{raw: true} flag suppresses Ollama's chat-template
+wrapper; the model sees exactly the bytes in \code{prompt}. The
+response carries a top-level \code{logprobs} array; the first
+entry's \code{top\_logprobs} field is the next-token distribution
+truncated to $K$ candidates. This is the call behind the
+bare-prompt and trailing-space probes.
+
+\paragraph{Chat-templated, thinking suppressed (Probe 3).}
+POST to \code{/api/chat} with the following body:
+
+\begin{lstlisting}[language=json,basicstyle=\ttfamily\footnotesize,numbers=none,frame=single,framerule=0.4pt,xleftmargin=1em,xrightmargin=1em]
+{
+  "model":         "<name>",
+  "messages":      [{"role": "user", "content": "<question>"}],
+  "stream":        false,
+  "think":         false,
+  "options":       {"num_predict": 1, "temperature": 0},
+  "logprobs":      true,
+  "top_logprobs":  K
+}
+\end{lstlisting}
+
+\noindent
+Two subtleties matter here. First, the OpenAI-compatible
+\code{/v1/chat/completions} endpoint silently ignores
+\code{think}; you must hit Ollama's native \code{/api/chat}.
+Second, not every model packaging honors the flag ---
+empirically, \code{gemma4:e2b} on a recent Ollama does,
+\code{gemma4:26b} on an older installation does not. When the
+flag is ignored, the first token of the reply is the model's
+thinking-channel marker rather than the answer; the script's
+demo~3 shows a hand-assembled chat-template workaround that
+works regardless. The boolean in the script's profile config
+controls which path is taken.
+
+\paragraph{Profiles.} The script is parameterized by a profile
+dictionary at the top of the file: model names and base URL for
+each of a ``local'' (laptop's own Ollama) and a ``remote'' (LAN
+Ollama with larger models) setup. Flip \code{PROFILE\_NAME} to
+switch. Adding a third entry --- pointing at a different host, a
+different Gemma packaging, or a non-Gemma model that exposes the
+same chat/generate endpoints --- is the cleanest way to extend
+the probes to a new target.

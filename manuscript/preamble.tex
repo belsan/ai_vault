@@ -10,6 +10,11 @@
 \usepackage{lmodern}
 \usepackage{parskip}
 
+% Render SentencePiece's leading-space marker (U+2581, LOWER ONE
+% EIGHTH BLOCK) as a visible underscore. Used in the tokenization
+% sections; pdflatex would otherwise reject the literal character.
+\DeclareUnicodeCharacter{2581}{\_}
+
 % --- Math --------------------------------------------------------
 \usepackage{amsmath}
 \usepackage{amssymb}
@@ -146,6 +151,26 @@
   before skip=12pt, after skip=12pt,
   arc=2pt,
   left=10pt,right=10pt,top=10pt,bottom=8pt,
+  #1
+}
+
+% Asides: tangentially-related material the reader can skip without
+% losing the through-line. Visually subdued -- light background, no
+% frame except a left bar -- and titled "Aside" in italic.
+\newtcolorbox{asidebox}[1][]{
+  enhanced, breakable,
+  colback=black!3, colframe=black!3,
+  fonttitle=\bfseries\sffamily\itshape,
+  title=Aside,
+  attach boxed title to top left={xshift=8pt,yshift=-\tcboxedtitleheight/2},
+  boxed title style={
+    colback=black!40, colframe=black!40,
+    sharp corners
+  },
+  borderline west={2pt}{0pt}{black!40},
+  before skip=12pt, after skip=12pt,
+  arc=0pt,
+  left=12pt,right=10pt,top=10pt,bottom=8pt,
   #1
 }
 
