@@ -105,7 +105,10 @@ Conventions:
 
 | Year | First author | Title | Link | Local |
 |---|---|---|---|---|
+| 2024 | Arditi | Refusal in Language Models Is Mediated by a Single Direction (NeurIPS 2024) | [arXiv:2406.11717](https://arxiv.org/abs/2406.11717) | [L] `2024_arditi_refusal-single-direction.pdf` |
 | 2025 | Bisconti | Adversarial Poetry — universal single-turn jailbreak | [arXiv:2511.15304](https://arxiv.org/abs/2511.15304) | [L] `2025_bisconti_adversarial-poetry-jailbreak.pdf` |
+| 2025 | Wollschläger | The Geometry of Refusal in LLMs — Concept Cones & Representational Independence (ICML 2025) | [arXiv:2502.17420](https://arxiv.org/abs/2502.17420) | [L] `2025_wollschlaeger_geometry-of-refusal.pdf` |
+| 2026 | Singhle | Classification ≠ Causation in Refusal Directions (Gemma/Qwen) | [lonehacker.github.io](https://lonehacker.github.io/mech-interp/index.html) · [code](https://github.com/lonehacker/mech-interp) | [L] `2026_singhle_refusal-directions-classification-vs-causation.md` |
 
 ## Graph drawing (resources/graph-drawing/)
 
