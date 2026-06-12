@@ -58,6 +58,12 @@ LLM/agent applications to RTL generation, verification, and design-space explora
 - **Local:** `2026_ace-for-rtl.pdf`
 - **Summary:** Combines a domain-trained RTL-specialized model with the agentic-context-evolution loop (sister of ACE in `agents/`). Tries to unify the two historically separate paths in LLM-for-RTL: train-a-better-model vs. wrap-a-frontier-model-in-an-agent.
 
+### VeriGraphi — Islam et al., 2026
+- **Title:** VeriGraphi: A Multi-Agent Framework of Hierarchical RTL Generation for Large Hardware Designs
+- **arXiv:** [2604.14550](https://arxiv.org/abs/2604.14550)
+- **Local:** `2026_verigraphi.pdf`
+- **Summary:** Tackles the failure modes LLMs hit on *hierarchical* Verilog — losing context across modules, hallucinating interfaces, fabricating inter-module wiring — by introducing a *spec-anchored Knowledge Graph* (HDA) as the architectural substrate before code generation. The KG explicitly encodes module hierarchy, port-level interfaces, wiring semantics, and inter-module dependencies as first-class graph entities/relations; it is built iteratively by a multi-agent analysis of the (prose + figures + tables) specification, giving a deterministic, machine-checkable structural scaffold. A progressive coding module then incrementally generates pseudo-code and synthesizable RTL submodule-by-submodule while enforcing interface consistency and dependency correctness at each step. Evaluated on three NIST specification documents + their reference implementations, with a RV32I processor as a detailed end-to-end case study. Pairs with RTL++ on graph-enhanced RTL and with the GenSoC link below on multi-agent SoC generation.
+
 ### Understanding & Mitigating RTL Errors — Zhang et al., 2025
 - **Title:** Understanding and Mitigating Errors of LLM-Generated RTL Code
 - **arXiv:** [2508.05266](https://arxiv.org/abs/2508.05266)
@@ -90,3 +96,4 @@ LLM/agent applications to RTL generation, verification, and design-space explora
 - **GenSoC — Multi-Agent SoC Generation:** https://www.researchgate.net/publication/398303730_GenSoC_A_Multi-Agent-Assisted_SoC_Generation_Methodology_Leveraging_Open-Source_Hardware
 - **Verilator + UVM blog post:** https://ahmedalsawi.github.io/posts/2026/02/verilator-running-my-first-uvm-with-verilator/ — Apparently Verilator can run UVM now.
 - **AI-driven coverage analysis:** https://bitsbytesgates.com/eda,/ucis,/coverage/2026/02/15/BetterCoverageAnalysisWithAI.html
+- **Altera — 10x productivity boost in formal verification with ChipStack (YouTube):** https://youtu.be/MQsXhDHIu6o — Vendor talk on using an AI-assisted toolchain (ChipStack) to scale formal verification at Altera. Useful as a data point for AI-in-EDA productivity claims, even though the framing is promotional.

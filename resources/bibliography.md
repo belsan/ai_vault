@@ -28,6 +28,8 @@ Conventions:
 | 2026 | Quek | MEMO: Memory as a Model | [arXiv:2605.15156](https://arxiv.org/abs/2605.15156) | [L] `2026_memo-memory-as-a-model.pdf` |
 | 2026 | Staufer | The 2025 AI Agent Index — Technical & Safety Features of Deployed Agents (FAccT '26) | [arXiv:2602.17753](https://arxiv.org/abs/2602.17753) | [L] `2026_staufer_ai-agent-index.pdf` |
 | 2026 | Osmani | Agent Harness Engineering (synthesis of Vtrivedy's `Agent = Model + Harness`) | [x.com thread](https://x.com/addyosmani/status/2053231239721885918) | [L] `2026_osmani_harness-engineering.md` |
+| 2026 | Yang | SkillOpt — Executive Strategy for Self-Evolving Agent Skills | [arXiv:2605.23904](https://arxiv.org/abs/2605.23904) | [L] `2026_yang_skillopt-self-evolving-skills.pdf` |
+| 2026 | Nakajima | The Log is the Agent — Event-Sourced Reactive Graphs for Auditable, Forkable Agentic Systems (ActiveGraph) | [arXiv:2605.21997](https://arxiv.org/abs/2605.21997) | [L] `2026_nakajima_log-is-the-agent.pdf` |
 | — | NVIDIA | Tool Orchestra | [research.nvidia.com](https://research.nvidia.com/labs/lpr/ToolOrchestra/) | [W] |
 | — | Anthropic | Code execution with MCP | [anthropic.com](https://www.anthropic.com/engineering/code-execution-with-mcp) | [W] |
 | — | Microsoft | RPG-ZeroRepo (repo) | [github](https://github.com/microsoft/RPG-ZeroRepo) | [W] |
@@ -53,9 +55,11 @@ Conventions:
 | 2025 | Akyash | RTL++ — Graph-enhanced LLM for RTL Code Generation | [arXiv:2505.13479](https://arxiv.org/abs/2505.13479) | [L] `2025_rtl-plus-plus_graph-enhanced.pdf` |
 | 2026 | Deng | ACE-RTL | [arXiv:2602.10218](https://arxiv.org/abs/2602.10218) | [L] `2026_ace-for-rtl.pdf` |
 | 2026 | Zhang | RTLSeek — Diversity-Oriented RL for RTL Generation | [arXiv:2603.27630](https://arxiv.org/abs/2603.27630) | [L] `2026_rtlseek.pdf` |
+| 2026 | Islam | VeriGraphi — Multi-Agent Framework for Hierarchical RTL Generation | [arXiv:2604.14550](https://arxiv.org/abs/2604.14550) | [L] `2026_verigraphi.pdf` |
 | — | Hassan et al. | GenSoC — Multi-Agent SoC Generation | [researchgate](https://www.researchgate.net/publication/398303730_GenSoC_A_Multi-Agent-Assisted_SoC_Generation_Methodology_Leveraging_Open-Source_Hardware) | [W] |
 | 2026 | Alsawi | Verilator + UVM (blog) | [ahmedalsawi.github.io](https://ahmedalsawi.github.io/posts/2026/02/verilator-running-my-first-uvm-with-verilator/) | [W] |
 | 2026 | — | Better Coverage Analysis With AI (blog) | [bitsbytesgates.com](https://bitsbytesgates.com/eda,/ucis,/coverage/2026/02/15/BetterCoverageAnalysisWithAI.html) | [W] |
+| — | Altera | 10x productivity boost in formal verification with ChipStack (video) | [youtu.be/MQsXhDHIu6o](https://youtu.be/MQsXhDHIu6o) | [W] |
 
 ## Prompt engineering (resources/prompt-engineering/)
 
@@ -109,6 +113,8 @@ Conventions:
 | 2025 | Bisconti | Adversarial Poetry — universal single-turn jailbreak | [arXiv:2511.15304](https://arxiv.org/abs/2511.15304) | [L] `2025_bisconti_adversarial-poetry-jailbreak.pdf` |
 | 2025 | Wollschläger | The Geometry of Refusal in LLMs — Concept Cones & Representational Independence (ICML 2025) | [arXiv:2502.17420](https://arxiv.org/abs/2502.17420) | [L] `2025_wollschlaeger_geometry-of-refusal.pdf` |
 | 2026 | Singhle | Classification ≠ Causation in Refusal Directions (Gemma/Qwen) | [lonehacker.github.io](https://lonehacker.github.io/mech-interp/index.html) · [code](https://github.com/lonehacker/mech-interp) | [L] `2026_singhle_refusal-directions-classification-vs-causation.md` |
+| 2026 | Wu | The Authorization-Execution Gap in Open-World Agents (5 integrity checks) | [arXiv:2605.11003](https://arxiv.org/abs/2605.11003) | [L] `2026_wu_authorization-execution-gap.pdf` |
+| 2026 | Liu | Alignment Whack-a-Mole — finetuning reactivates verbatim copyrighted-book recall | [arXiv:2603.20957](https://arxiv.org/abs/2603.20957) | [L] `2026_liu_alignment-whack-a-mole-finetuning-copyrighted.pdf` |
 
 ## Graph drawing (resources/graph-drawing/)
 

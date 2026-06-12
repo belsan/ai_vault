@@ -95,6 +95,18 @@ Papers, articles, and code on the design of LLM-based agents: action spaces, har
 - **Local:** `2026_osmani_harness-engineering.md`
 - **Summary:** Synthesis post around Vtrivedy's `Agent = Model + Harness` equation: the harness is *everything that isn't the model* — system prompts, tools, MCP servers, sandboxes, orchestration, hooks, observability, recovery paths. Argues that the gap between what models can do and what we see them doing is largely a harness gap, and proposes the "ratchet" discipline: every failure becomes a permanent rule (AGENTS.md entry, hook, reviewer subagent). Names the canonical components — filesystem + git for durable state, bash for general-purpose action, sandboxes for safe execution, memory files for continual learning, context-rot mitigations (compaction, tool-call offloading, progressive disclosure), long-horizon scaffolding (loops, planning, splits), hooks as enforcement, AGENTS.md as the rulebook. Closes with "harnesses don't shrink, they move" (better models raise the ceiling, not eliminate the harness) and the HaaS observation (SDKs are shifting from completions APIs to runtime APIs). The clearest current statement of harness vocabulary; pairs naturally with the agents-chapter §2 we're writing.
 
+### SkillOpt — Yang et al., 2026
+- **Title:** SkillOpt: Executive Strategy for Self-Evolving Agent Skills
+- **arXiv:** [2605.23904](https://arxiv.org/abs/2605.23904)
+- **Local:** `2026_yang_skillopt-self-evolving-skills.pdf`
+- **Summary:** Positions itself as "the first systematic controllable text-space optimizer for agent skills." Instead of hand-crafting skills or generating them one-shot, treats the skill library as *external state* that a separate optimizer model edits: scored rollouts are converted into bounded *add/delete/replace* edits, and an edit is only accepted if it improves validation scores. Reports +19.1 to +24.8 points across six benchmarks and three execution environments on GPT-5.5, with the evolved skills transferring across model scales and environments. Relevant to any continual-learning / self-improving agent discussion — pairs naturally with ACE (Zhang 2025) as a *skill-level* counterpart to ACE's context-level "playbook" evolution.
+
+### The Log is the Agent — Nakajima, 2026
+- **Title:** The Log is the Agent: Event-Sourced Reactive Graphs for Auditable, Forkable Agentic Systems
+- **arXiv:** [2605.21997](https://arxiv.org/abs/2605.21997)
+- **Local:** `2026_nakajima_log-is-the-agent.pdf`
+- **Summary:** Proposes ActiveGraph, a runtime that inverts the usual "LLM loop + bolted-on logging" arrangement: the append-only event log is the source of truth, the working graph is a deterministic projection of that log, and behaviors (plain functions, classes, LLM-backed routines, edge-attached logic) react to graph changes and emit new events. No component instructs another — coordination is purely through the shared graph. Yields three properties retrieval/summarization "memory" doesn't give you: deterministic replay of any run from its log, cheap forking that branches a run at any event without re-executing the shared prefix, and end-to-end lineage from a high-level goal down to the individual model call that produced each artifact. Author is the BabyAGI creator; the paper situates itself in the BabyAGI lineage and graph-memory literature. Relevant to the audit/replay/lineage thread in the agents chapter and a natural counterpoint to context-window-as-state designs.
+
 ---
 
 ## Web articles & repos (link-only)

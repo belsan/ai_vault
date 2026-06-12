@@ -1,0 +1,5 @@
+I will dump general ideas in here. Not ordered or worked out, just an inbox.
+
+* Explain the raw mode of llms. And how it relates to the json interface we see. And why even go thorugh the lenght of training special tokens when we could, in theory, also train the model to output json from the start.
+* For the structured output chapter an interesting example would be a who wants to be a millionaire style quiz. Questions and 4 answers are generated on-the-fly by an llm. To be able to "render" it we need it in a good format: question, answer A, answer B, ..., Correct Answer letter. Simple to implement as a text based quiz, llm does provide value, structured output is needed. 
+* Another example for the structured output chapter is a code grading system. Imagine you have a coding task and want to know not only if it compiles and is correct, but also if it is well written, adheres to coding guidelines, etc. Simple, can use a 0-1 or 1-10 score and some comment. Very extensible for an agent, where a toolcall can be used to compile, run the tests, run a static checker, etc. Even beyond that it can evolve into a critic for a system that generates code.

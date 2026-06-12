@@ -139,7 +139,7 @@ def _ollama_chat(messages, model, temperature, max_tokens) -> str:
     rsp = requests.post(
         f"{base}/api/chat",
         json={
-            "model":    model or os.environ.get("OLLAMA_MODEL", "gemma4:e4b"),
+            "model":    model or os.environ.get("OLLAMA_MODEL", "gemma4:e2b"),
             "stream":   False,
             "messages": messages,
             "options":  {
